@@ -20,6 +20,16 @@ class Wedge:
     def occ_type(self):
         return self.wedge_id & 15
 
+    def get_coord_relative_to_center(self):
+        x = self.coord % BOX_SIZE
+        y = (self.coord // BOX_SIZE) % BOX_SIZE
+        z = (self.coord // BOX_SIZE) // BOX_SIZE
+        c = BOX_SIZE // 2
+        return x - c, y - c, z - c
+
+    def get_face_id_2(self):
+        return WEDGE_ID_TO_FACE_IDS[self.wedge_id][1]
+
 
 def construct_formula(formula: list[int]):
     """Returns wedges (if formula is valid), or None if it's invalid."""
