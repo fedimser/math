@@ -13,7 +13,10 @@ def test_count_shapes():
 
 
 def test_palindrome_shapes():
-    assert RubiksSnakeCounter.count_palindrome_shapes(8) == 221
+    expected = [None, 1, 4, 4, 16, 13, 60, 52, 221, 185, 802, 700, 2957, 2483, 10820, 9199, 39608]
+    for n in range(1, 17):
+        assert RubiksSnakeCounter.count_palindrome_shapes(n) == expected[n]
+
     assert RubiksSnakeCounter.count_palindrome_shapes(9) == 185
     assert RubiksSnakeCounter.count_palindrome_shapes(10) == 802
 

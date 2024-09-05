@@ -2,14 +2,16 @@ from rubiks_snake import *
 
 
 class Wedge:
+    @staticmethod
+    def from_code(wedge_code):
+        return Wedge(wedge_code >> 6, wedge_code & 63)
+
     def __init__(self, coord, wedge_id):
         self.coord = coord
         self.wedge_id = wedge_id
 
     def __repr__(self):
-        x = self.coord % BOX_SIZE
-        y = (self.coord // BOX_SIZE) % BOX_SIZE
-        z = (self.coord // BOX_SIZE) // BOX_SIZE
+        x, y, z = self.get_coord_relative_to_center()
         f1, f2 = WEDGE_ID_TO_FACE_IDS[self.wedge_id]
         return f"({x},{y},{z};{f1}->{f2})"
 

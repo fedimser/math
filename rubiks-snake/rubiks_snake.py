@@ -56,6 +56,13 @@ def _push_wedge(wedge_coord, wedge_id, wedges, cubes):
     cubes[wedge_coord] += wedge_id & 15
 
 
+@numba.jit("(i8[:],i8[:])", inline="always")
+def _pop_wedge(wedges, cubes):
+    last_wedge = wedges[wedges[0]]
+    cubes[last_wedge >> 6] -= last_wedge & 15
+    wedges[0] += 1
+
+
 @numba.jit("i8(i8,i8)", inline="always")
 def _get_next_wedge_coord(last_wedge_id, last_wedge_coord):
     return last_wedge_coord + WEDGE_ID_TO_NEXT_DELTA[last_wedge_id]
@@ -64,6 +71,22 @@ def _get_next_wedge_coord(last_wedge_id, last_wedge_coord):
 @numba.jit("i8(i8,i8)", inline="always")
 def _get_next_wedge_id(last_wedge_id, rot):
     return ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[last_wedge_id + 36 * rot]
+
+
+@numba.jit("i8(i8,i8[:],i8[:])", inline="always")
+def _push_next_wedge_if_can(rot, wedges, cubes):
+    last_wedge = wedges[wedges[0]]
+    last_wedge_coord, last_wedge_id = last_wedge >> 6, last_wedge & 63
+    next_wedge_coord = _get_next_wedge_coord(last_wedge_id, last_wedge_coord)
+    next_wedge_id = _get_next_wedge_id(last_wedge_id, rot)
+    next_wedge_occ_type = next_wedge_id & 15
+    next_cube_occ_type = cubes[next_wedge_coord]
+    can_push = next_cube_occ_type == 0 or (next_cube_occ_type + next_wedge_occ_type == 13)
+    if can_push:
+        _push_wedge(next_wedge_coord, next_wedge_id, wedges, cubes)
+        return 1
+    else:
+        return 0
 
 
 @numba.jit("(i8[:],i8[:],i8[:])")
@@ -105,18 +128,9 @@ def _count_shapes_rec(wedges, cubes, total_count):
 def _is_shape_valid_rec(formula, wedges, cubes):
     if len(formula) == 0:
         return 1
-    last_wedge = wedges[wedges[0]]
-    last_wedge_coord, last_wedge_id = last_wedge >> 6, last_wedge & 63
-    next_wedge_coord = _get_next_wedge_coord(last_wedge_id, last_wedge_coord)
-    next_wedge_id = _get_next_wedge_id(last_wedge_id, formula[0])
-    next_wedge_occ_type = next_wedge_id & 15
-    next_cube_occ_type = cubes[next_wedge_coord]
-    can_push = next_cube_occ_type == 0 or (next_cube_occ_type + next_wedge_occ_type == 13)
-    if can_push:
-        _push_wedge(next_wedge_coord, next_wedge_id, wedges, cubes)
+    if _push_next_wedge_if_can(formula[0], wedges, cubes):
         ans = _is_shape_valid_rec(formula[1:], wedges, cubes)
-        cubes[next_wedge_coord] -= next_wedge_occ_type  # pop
-        wedges[0] += 1  # pop
+        _pop_wedge(wedges, cubes)
         return ans
     else:
         return 0
@@ -158,3 +172,11 @@ class RubiksSnakeCounter:
         cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
         _push_wedge(CENTER_COORD, FACE_IDS_TO_WEDGE_ID[(0, 3)], wedges, cubes)
         return _count_palindrome_shapes(n, wedges, cubes)
+
+
+if __name__ == "__main__":
+    import time
+
+    t0 = time.time()
+    print(RubiksSnakeCounter.count_palindrome_shapes(22))
+    print("time", time.time() - t0)
