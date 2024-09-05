@@ -42,6 +42,7 @@ def _init_globals():
 
 
 _init_globals()
+INIT_WEDGE = FACE_IDS_TO_WEDGE_ID[(0, 3)]
 
 
 @numba.jit("i8(i8,i8)", inline="always")
@@ -61,6 +62,12 @@ def _pop_wedge(wedges, cubes):
     last_wedge = wedges[wedges[0]]
     cubes[last_wedge >> 6] -= last_wedge & 15
     wedges[0] += 1
+
+
+@numba.jit("(i8,i8[:],i8[:])", inline="always")
+def _pop_n_wedges(n, wedges, cubes):
+    for _ in range(n):
+        _pop_wedge(wedges, cubes)
 
 
 @numba.jit("i8(i8,i8)", inline="always")
@@ -87,6 +94,15 @@ def _push_next_wedge_if_can(rot, wedges, cubes):
         return 1
     else:
         return 0
+
+
+@numba.jit("UniTuple(i8[:],2)(i8,i8)")
+def _prepare_arena(n, init_wedge_id):
+    wedges = np.zeros(n + 1, dtype=np.int64)
+    wedges[0] = n + 1
+    cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
+    _push_wedge(CENTER_COORD, init_wedge_id, wedges, cubes)
+    return wedges, cubes
 
 
 @numba.jit("(i8[:],i8[:],i8[:])")
@@ -149,6 +165,25 @@ def _count_palindrome_shapes(n, wedges, cubes):
     return ans
 
 
+#
+@numba.jit("i8(i8,i8,i8[:],i8[:])", inline="always")
+def _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cubes) -> int:
+    """Tries to add wedges to tail, instructed by rotations in formula.
+
+    Formula has given length(>0) and encoded by formula encoding convention.
+    Returns number of added wedges. If result == n, means all added successfully. If result <n,
+    only this much were added and then got spacial conflict.
+    Needs to be undone by _pop_n_wedges.
+    """
+    k = 2 * (formula_length - 1)
+    for i in range(formula_length):
+        rot = (formula_code >> k) & 3
+        k -= 2
+        if not _push_next_wedge_if_can(rot, wedges, cubes):
+            return i
+    return formula_length
+
+
 class RubiksSnakeCounter:
     S = [None, 1, 4, 16, 64, 241, 920, 3384, 12585, 46471, 172226, 633138, 2333757, 8561679,
          31462176, 115247629, 422677188, 1546186675, 5661378449, 20689242550, 75663420126,
@@ -158,19 +193,13 @@ class RubiksSnakeCounter:
     @staticmethod
     def count_all_shapes(n):
         total_count = np.zeros(n + 1, dtype=np.int64)
-        wedges = np.zeros(n + 1, dtype=np.int64)
-        wedges[0] = n + 1  # wedges[0] indicates last wedge index
-        cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
-        _push_wedge(CENTER_COORD, FACE_IDS_TO_WEDGE_ID[(0, 3)], wedges, cubes)  # Initial wedge.
+        wedges, cubes = _prepare_arena(n, INIT_WEDGE)
         _count_shapes_rec(wedges, cubes, total_count)
         return total_count[1:][::-1]
 
     @staticmethod
     def count_palindrome_shapes(n):
-        wedges = np.zeros(MAX_N + 1, dtype=np.int64)
-        wedges[0] = MAX_N + 1
-        cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
-        _push_wedge(CENTER_COORD, FACE_IDS_TO_WEDGE_ID[(0, 3)], wedges, cubes)
+        wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
         return _count_palindrome_shapes(n, wedges, cubes)
 
 
