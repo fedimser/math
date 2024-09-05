@@ -1,6 +1,7 @@
 import numpy as np
 import numba
 
+# ================   GEOMETRY   ===================
 # Prepare the grid.
 MAX_N = 26
 BOX_SIZE = 2 * (MAX_N // 2) + 1
@@ -50,6 +51,51 @@ def _encode_wedge(coord, wedge_id):
     return (coord << 6) + wedge_id
 
 
+@numba.jit("i8(i8,i8)", inline="always")
+def _get_next_wedge_coord(last_wedge_id, last_wedge_coord):
+    return last_wedge_coord + WEDGE_ID_TO_NEXT_DELTA[last_wedge_id]
+
+
+@numba.jit("i8(i8,i8)", inline="always")
+def _get_next_wedge_id(last_wedge_id, rot):
+    return ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[last_wedge_id + 36 * rot]
+
+
+# ================   FORMULA ENCODING   ===================
+def encode_formula_as_int(s):
+    assert all(48 <= ord(c) <= 51 for c in s)
+    n = len(s)
+    return sum((ord(s[i]) - 48) << (2 * (n - 1 - i)) for i in range(len(s)))
+
+
+def decode_formula(code, length):
+    return ''.join(str((code >> (2 * i)) % 4) for i in range(length))[::-1]
+
+
+@numba.jit("i8(i8,i8)", inline="always")
+def reverse_encoded_formula(code, length):
+    ans = 0
+    for i in range(length):
+        ans = (ans << 2) + (code >> (2 * i)) % 4
+    return ans
+
+
+@numba.jit("i8(i8,i8)", inline="always")
+def min_cyclic_shift(code, length):
+    ans = code
+    l = 2 * (length - 1)
+    for i in range(length - 1):
+        code = (code >> 2) + ((code & 3) << l)
+        if code < ans: ans = code
+    return ans
+
+
+@numba.jit("i8(i8,i8,i8)", inline="always")
+def concat_encoded_formulas(code1, code2, length2):
+    return (code1 << (2 * length2)) + code2
+
+
+# ================   ARENA   ===================
 @numba.jit("(i8,i8,i8[:],i8[:])", inline="always")
 def _push_wedge(wedge_coord, wedge_id, wedges, cubes):
     wedges[0] -= 1
@@ -70,16 +116,6 @@ def _pop_n_wedges(n, wedges, cubes):
         _pop_wedge(wedges, cubes)
 
 
-@numba.jit("i8(i8,i8)", inline="always")
-def _get_next_wedge_coord(last_wedge_id, last_wedge_coord):
-    return last_wedge_coord + WEDGE_ID_TO_NEXT_DELTA[last_wedge_id]
-
-
-@numba.jit("i8(i8,i8)", inline="always")
-def _get_next_wedge_id(last_wedge_id, rot):
-    return ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[last_wedge_id + 36 * rot]
-
-
 @numba.jit("i8(i8,i8[:],i8[:])", inline="always")
 def _push_next_wedge_if_can(rot, wedges, cubes):
     last_wedge = wedges[wedges[0]]
@@ -96,6 +132,24 @@ def _push_next_wedge_if_can(rot, wedges, cubes):
         return 0
 
 
+@numba.jit("i8(i8,i8,i8[:],i8[:])", inline="always")
+def _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cubes) -> int:
+    """Tries to add wedges to tail, instructed by rotations in formula.
+
+    Formula has given length(>0) and encoded by formula encoding convention.
+    Returns number of added wedges. If result == n, means all added successfully. If result <n,
+    only this much were added and then got spacial conflict.
+    Needs to be undone by _pop_n_wedges.
+    """
+    k = 2 * (formula_length - 1)
+    for i in range(formula_length):
+        rot = (formula_code >> k) & 3
+        k -= 2
+        if not _push_next_wedge_if_can(rot, wedges, cubes):
+            return i
+    return formula_length
+
+
 @numba.jit("UniTuple(i8[:],2)(i8,i8)")
 def _prepare_arena(n, init_wedge_id):
     wedges = np.zeros(n + 1, dtype=np.int64)
@@ -105,6 +159,7 @@ def _prepare_arena(n, init_wedge_id):
     return wedges, cubes
 
 
+# ================   COUNTING   ===================
 @numba.jit("(i8[:],i8[:],i8[:])")
 def _count_shapes_rec(wedges, cubes, total_count):
     last_wedge_index = wedges[0]
@@ -165,23 +220,32 @@ def _count_palindrome_shapes(n, wedges, cubes):
     return ans
 
 
-#
-@numba.jit("i8(i8,i8,i8[:],i8[:])", inline="always")
-def _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cubes) -> int:
-    """Tries to add wedges to tail, instructed by rotations in formula.
+@numba.jit("i8(i8,i8,i8[:],i8[:])")
+def _is_loop(formula_code, formula_length, wedges, cubes):
+    ans = 0
+    n = _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cubes)
+    if n == formula_length:
+        last_wedge = wedges[wedges[0]]
+        last_wedge_coord = last_wedge >> 6
+        last_wedge_id = last_wedge & 63
+        if (last_wedge_coord == CENTER_COORD - DY) and 25 <= last_wedge_id <= 28:
+            ans = 1
+    _pop_n_wedges(n, wedges, cubes)
+    return ans
 
-    Formula has given length(>0) and encoded by formula encoding convention.
-    Returns number of added wedges. If result == n, means all added successfully. If result <n,
-    only this much were added and then got spacial conflict.
-    Needs to be undone by _pop_n_wedges.
-    """
-    k = 2 * (formula_length - 1)
-    for i in range(formula_length):
-        rot = (formula_code >> k) & 3
-        k -= 2
-        if not _push_next_wedge_if_can(rot, wedges, cubes):
-            return i
-    return formula_length
+
+@numba.jit("i8(i8)")
+def _count_palindrome_loops(n):
+    if n % 2 == 1:
+        return 0
+    n2 = n // 2
+    wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
+    ans = 0
+    for i in range(4 ** n2):
+        formula = concat_encoded_formulas(i, reverse_encoded_formula(i >> 2, n2 - 1), n2 - 1)
+        if _is_loop(formula, n - 1, wedges, cubes):
+            ans += 1
+    return ans
 
 
 class RubiksSnakeCounter:
@@ -202,10 +266,7 @@ class RubiksSnakeCounter:
         wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
         return _count_palindrome_shapes(n, wedges, cubes)
 
-
-if __name__ == "__main__":
-    import time
-
-    t0 = time.time()
-    print(RubiksSnakeCounter.count_palindrome_shapes(22))
-    print("time", time.time() - t0)
+    @staticmethod
+    def count_palindrome_loops(n):
+        """Count formulas of length n-1 that are palindromes and describe loops."""
+        return _count_palindrome_loops(n)

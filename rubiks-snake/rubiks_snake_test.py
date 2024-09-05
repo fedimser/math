@@ -1,6 +1,7 @@
 import pytest
 
-from rubiks_snake import RubiksSnakeCounter
+from rubiks_snake import RubiksSnakeCounter, FACE_IDS_TO_WEDGE_ID, decode_formula, \
+    encode_formula_as_int, reverse_encoded_formula, min_cyclic_shift
 from rubiks_snake_slow import enumerate_valid_formulas_slow
 
 
@@ -30,3 +31,21 @@ def test_palindromes_slow(n):
     assert num_shapes == RubiksSnakeCounter.S[n]
     assert num_palindromes == RubiksSnakeCounter.count_palindrome_shapes(n)
     assert 2 * num_shapes_up_to_reverse == num_palindromes + num_shapes
+
+
+def test_wedges_facing_up():
+    wedge_ids_facing_up = [wedge_id for faces, wedge_id in FACE_IDS_TO_WEDGE_ID.items() if
+                           faces[1] == 5]
+    assert set(wedge_ids_facing_up) == {25, 26, 27, 28}
+
+
+def test_formula_encoding():
+    for n in range(1, 7):
+        for code in range(4 ** n):
+            formula = decode_formula(code, n)
+            assert len(formula) == n
+            assert encode_formula_as_int(formula) == code
+            assert decode_formula(reverse_encoded_formula(code, n), n) == formula[::-1]
+            min_shift = decode_formula(min_cyclic_shift(code, n), n)
+            expected_min_shift = min(formula[i:] + formula[:i] for i in range(n))
+            assert min_shift == expected_min_shift
