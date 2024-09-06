@@ -18,8 +18,11 @@ def test_palindrome_shapes():
     for n in range(1, 17):
         assert RubiksSnakeCounter.count_palindrome_shapes(n) == expected[n]
 
-    assert RubiksSnakeCounter.count_palindrome_shapes(9) == 185
-    assert RubiksSnakeCounter.count_palindrome_shapes(10) == 802
+
+def test_palindrome_loops():
+    expected = [None, 0, 0, 0, 1, 0, 2, 0, 4, 0, 10, 0, 29, 0, 90, 0, 226, 0, 862, 0, 2610]
+    for n in range(1, 21):
+        assert RubiksSnakeCounter.count_palindrome_loops(n) == expected[n]
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 6, 7, 8])

@@ -222,13 +222,34 @@ def _count_palindrome_shapes(n, wedges, cubes):
 
 @numba.jit("i8(i8,i8,i8[:],i8[:])")
 def _is_loop(formula_code, formula_length, wedges, cubes):
+    """Checks whether given formula describes a loop.
+
+    There are 2 kinds of formulas:
+        * Shape-formula. String of n-1 characters describing shape of n-wedge Snake by listing all
+            rotations at joints between wedges. Loop always have shape-formula of odd length.
+        * Loop-formula. String of n-characters describing a loop of n-wedge Snake, which is a shape
+            formula plus one extra rotation, as if there was a joint between head and tail. It is
+            useful for describing loops, because all its cyclic shifts describe the same loop (in a
+            sense). Loops always have loop-formula of even length.
+    Both kinds are supported. That is, this function returns true if formula can be interpreted as
+        shape-formula or loop-formula describing a loop.
+    """
     ans = 0
     n = _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cubes)
-    if n == formula_length:
+    if n == formula_length and formula_length % 2 == 1:
+        # This can be a shape-formula, iff the last wedge is below center and is facing up.
         last_wedge = wedges[wedges[0]]
         last_wedge_coord = last_wedge >> 6
         last_wedge_id = last_wedge & 63
         if (last_wedge_coord == CENTER_COORD - DY) and 25 <= last_wedge_id <= 28:
+            ans = 1
+    elif n == formula_length - 1 and formula_length % 2 == 0:
+        # This can be a loop-formula, iff the potential tail coincided with head.
+        last_wedge = wedges[wedges[0]]
+        last_wedge_coord, last_wedge_id = last_wedge >> 6, last_wedge & 63
+        next_wedge_coord = _get_next_wedge_coord(last_wedge_id, last_wedge_coord)
+        next_wedge_id = _get_next_wedge_id(last_wedge_id, formula_code % 4)
+        if _encode_wedge(next_wedge_coord, next_wedge_id) == wedges[-1]:
             ans = 1
     _pop_n_wedges(n, wedges, cubes)
     return ans
@@ -270,3 +291,11 @@ class RubiksSnakeCounter:
     def count_palindrome_loops(n):
         """Count formulas of length n-1 that are palindromes and describe loops."""
         return _count_palindrome_loops(n)
+
+    @staticmethod
+    def list_all_loops(n) -> list[str]:
+        """All loops for n-wedge Snake, represented by loop-formulas."""
+        if n % 2 == 1:
+            return []
+        wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
+        return [decode_formula(i, n) for i in range(4 ** n) if _is_loop(i, n, wedges, cubes)]
