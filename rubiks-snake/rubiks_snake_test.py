@@ -52,3 +52,7 @@ def test_formula_encoding():
             min_shift = decode_formula(min_cyclic_shift(code, n), n)
             expected_min_shift = min(formula[i:] + formula[:i] for i in range(n))
             assert min_shift == expected_min_shift
+
+def test_enumerate_shapes():
+    for i in range(1,9):
+        assert len(RubiksSnakeCounter.enumerate_shapes(i)[0]) == RubiksSnakeCounter.S[i]

@@ -269,6 +269,21 @@ def _count_palindrome_loops(n):
     return ans
 
 
+# Enumerates all shapes.
+@numba.jit("(i8[:],i8[:],i8,i8[:],i8[:])")
+def _enumerate_shapes_rec(wedges, cubes, cur_formula, formulas, last_wedges):
+    last_wedge = wedges[wedges[0]]
+    if wedges[0] == 1:
+        formulas[formulas[0]] = cur_formula
+        last_wedges[formulas[0]] = last_wedge
+        formulas[0] += 1
+        return
+    for rot in range(4):
+        if _push_next_wedge_if_can(rot, wedges, cubes):
+            _enumerate_shapes_rec(wedges, cubes, (cur_formula << 2) + rot, formulas, last_wedges)
+            _pop_wedge(wedges, cubes)
+
+
 class RubiksSnakeCounter:
     S = [None, 1, 4, 16, 64, 241, 920, 3384, 12585, 46471, 172226, 633138, 2333757, 8561679,
          31462176, 115247629, 422677188, 1546186675, 5661378449, 20689242550, 75663420126,
@@ -291,6 +306,22 @@ class RubiksSnakeCounter:
     def count_palindrome_loops(n):
         """Count formulas of length n-1 that are palindromes and describe loops."""
         return _count_palindrome_loops(n)
+
+    @staticmethod
+    def enumerate_shapes(n, first_wedge_faces=(0, 3)):
+        """Enumerates shapes of length n, their formulas have length n-1."""
+        assert n <= 20
+        wedges, cubes = _prepare_arena(n, FACE_IDS_TO_WEDGE_ID[first_wedge_faces])
+
+        num_shapes = RubiksSnakeCounter.S[n]
+        formulas = np.zeros(num_shapes + 1, dtype=np.int64)
+        last_wedges = np.zeros_like(formulas)
+        formulas[0] = 1
+
+        _enumerate_shapes_rec(wedges, cubes, 0, formulas, last_wedges)
+
+        assert formulas[0] == 1 + num_shapes
+        return formulas[1:], last_wedges[1:]
 
     @staticmethod
     def list_all_loops(n) -> list[str]:
