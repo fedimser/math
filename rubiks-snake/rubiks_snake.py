@@ -62,7 +62,7 @@ def _get_next_wedge_id(last_wedge_id, rot):
 
 
 # ================   FORMULA ENCODING   ===================
-def encode_formula_as_int(s):
+def encode_formula(s):
     assert all(48 <= ord(c) <= 51 for c in s)
     n = len(s)
     return sum((ord(s[i]) - 48) << (2 * (n - 1 - i)) for i in range(len(s)))
@@ -116,6 +116,13 @@ def _pop_n_wedges(n, wedges, cubes):
         _pop_wedge(wedges, cubes)
 
 
+@numba.jit("(i8[:],i8[:])", inline="always")
+def _pop_all_but_one(wedges, cubes):
+    head_pos = len(wedges) - 1
+    while wedges[0] != head_pos:
+        _pop_wedge(wedges, cubes)
+
+
 @numba.jit("i8(i8,i8[:],i8[:])", inline="always")
 def _push_next_wedge_if_can(rot, wedges, cubes):
     last_wedge = wedges[wedges[0]]
@@ -157,6 +164,17 @@ def _prepare_arena(n, init_wedge_id):
     cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
     _push_wedge(CENTER_COORD, init_wedge_id, wedges, cubes)
     return wedges, cubes
+
+
+# Whether next wedge, while impossible to physically add, would exactly coincide with the head.
+# Useful for checking if loop-formula describes a loop.
+@numba.jit("i8(i8,i8[:])", inline="always")
+def _next_wedge_would_match_head(rot, wedges):
+    last_wedge = wedges[wedges[0]]
+    last_wedge_coord, last_wedge_id = last_wedge >> 6, last_wedge & 63
+    next_wedge_coord = _get_next_wedge_coord(last_wedge_id, last_wedge_coord)
+    next_wedge_id = _get_next_wedge_id(last_wedge_id, rot)
+    return _encode_wedge(next_wedge_coord, next_wedge_id) == wedges[-1]
 
 
 # ================   COUNTING   ===================
@@ -245,13 +263,9 @@ def _is_loop(formula_code, formula_length, wedges, cubes):
             ans = 1
     elif n == formula_length - 1 and formula_length % 2 == 0:
         # This can be a loop-formula, iff the potential tail coincided with head.
-        last_wedge = wedges[wedges[0]]
-        last_wedge_coord, last_wedge_id = last_wedge >> 6, last_wedge & 63
-        next_wedge_coord = _get_next_wedge_coord(last_wedge_id, last_wedge_coord)
-        next_wedge_id = _get_next_wedge_id(last_wedge_id, formula_code % 4)
-        if _encode_wedge(next_wedge_coord, next_wedge_id) == wedges[-1]:
+        if _next_wedge_would_match_head(formula_code % 4, wedges):
             ans = 1
-    _pop_n_wedges(n, wedges, cubes)
+    _pop_all_but_one(wedges, cubes)
     return ans
 
 
@@ -285,10 +299,18 @@ def _enumerate_shapes_rec(wedges, cubes, cur_formula, formulas, last_wedges):
 
 
 class RubiksSnakeCounter:
+    # Number of formulas of length n-1 describing a valid shape of n-wedge snake.
+    # Pre-computed up to n=26.
     S = [None, 1, 4, 16, 64, 241, 920, 3384, 12585, 46471, 172226, 633138, 2333757, 8561679,
          31462176, 115247629, 422677188, 1546186675, 5661378449, 20689242550, 75663420126,
          276279455583, 1009416896015, 3683274847187, 13446591920995, 49037278586475,
          178904588083788]
+
+    # Number of formulas of length n-1 describing a loop of n-wedge snake.
+    # Equivalent: number of loop-formulas of length n describing a loop of n-wedge snake.
+    # Pre-computed up to n=25.
+    L1 = [None, 0, 0, 0, 1, 0, 8, 0, 16, 0, 280, 0, 2229, 0, 20720, 0, 226000, 0, 2293422, 0,
+          24965960, 0, 275633094, 0, 3069890660, 0]
 
     @staticmethod
     def count_all_shapes(n):
@@ -310,7 +332,7 @@ class RubiksSnakeCounter:
     @staticmethod
     def enumerate_shapes(n, first_wedge_faces=(0, 3)):
         """Enumerates shapes of length n, their formulas have length n-1."""
-        assert n <= 20
+        assert 1 <= n <= 20
         wedges, cubes = _prepare_arena(n, FACE_IDS_TO_WEDGE_ID[first_wedge_faces])
 
         num_shapes = RubiksSnakeCounter.S[n]
@@ -324,9 +346,9 @@ class RubiksSnakeCounter:
         return formulas[1:], last_wedges[1:]
 
     @staticmethod
-    def list_all_loops(n) -> list[str]:
+    def list_all_loops(n):
         """All loops for n-wedge Snake, represented by loop-formulas."""
         if n % 2 == 1:
             return []
         wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
-        return [decode_formula(i, n) for i in range(4 ** n) if _is_loop(i, n, wedges, cubes)]
+        return [i for i in range(4 ** n) if _is_loop(i, n, wedges, cubes)]

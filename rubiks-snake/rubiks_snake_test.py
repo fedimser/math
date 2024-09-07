@@ -1,7 +1,7 @@
 import pytest
 
 from rubiks_snake import RubiksSnakeCounter, FACE_IDS_TO_WEDGE_ID, decode_formula, \
-    encode_formula_as_int, reverse_encoded_formula, min_cyclic_shift
+    encode_formula, reverse_encoded_formula, min_cyclic_shift
 from rubiks_snake_slow import enumerate_valid_formulas_slow
 
 
@@ -47,7 +47,7 @@ def test_formula_encoding():
         for code in range(4 ** n):
             formula = decode_formula(code, n)
             assert len(formula) == n
-            assert encode_formula_as_int(formula) == code
+            assert encode_formula(formula) == code
             assert decode_formula(reverse_encoded_formula(code, n), n) == formula[::-1]
             min_shift = decode_formula(min_cyclic_shift(code, n), n)
             expected_min_shift = min(formula[i:] + formula[:i] for i in range(n))
@@ -56,3 +56,6 @@ def test_formula_encoding():
 def test_enumerate_shapes():
     for i in range(1,9):
         assert len(RubiksSnakeCounter.enumerate_shapes(i)[0]) == RubiksSnakeCounter.S[i]
+
+def test_list_all_loops():
+    assert len(RubiksSnakeCounter.list_all_loops(10)) == 280
