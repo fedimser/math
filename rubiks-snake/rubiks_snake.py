@@ -352,3 +352,13 @@ class RubiksSnakeCounter:
             return []
         wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
         return [i for i in range(4 ** n) if _is_loop(i, n, wedges, cubes)]
+
+    def __init__(self):
+        self.wedges, self.cubes = _prepare_arena(MAX_N, INIT_WEDGE)
+
+    def is_formula_valid(self, formula: str) -> bool:
+        n = len(formula)
+        enc = encode_formula(formula)
+        ans = (_add_wedges_from_formula_while_can(enc, n, self.wedges, self.cubes) == n)
+        _pop_all_but_one(self.wedges, self.cubes)
+        return ans
