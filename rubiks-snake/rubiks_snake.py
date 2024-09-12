@@ -3,7 +3,7 @@ import numba
 
 # ================   GEOMETRY   ===================
 # Prepare the grid.
-MAX_N = 26
+MAX_N = 32
 BOX_SIZE = 2 * (MAX_N // 2) + 1
 DX, DY, DZ = 1, BOX_SIZE, BOX_SIZE ** 2
 CENTER_COORD = (MAX_N // 2) * (DX + DY + DZ)
@@ -300,11 +300,11 @@ def _enumerate_shapes_rec(wedges, cubes, cur_formula, formulas, last_wedges):
 
 class RubiksSnakeCounter:
     # Number of formulas of length n-1 describing a valid shape of n-wedge snake.
-    # Pre-computed up to n=26.
+    # Pre-computed up to n=28.
     S = [None, 1, 4, 16, 64, 241, 920, 3384, 12585, 46471, 172226, 633138, 2333757, 8561679,
          31462176, 115247629, 422677188, 1546186675, 5661378449, 20689242550, 75663420126,
          276279455583, 1009416896015, 3683274847187, 13446591920995, 49037278586475,
-         178904588083788]
+         178904588083788, 652111697384508, 2377810831870022]
 
     # Number of formulas of length n-1 describing a loop of n-wedge snake.
     # Equivalent: number of loop-formulas of length n describing a loop of n-wedge snake.

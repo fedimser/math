@@ -53,9 +53,11 @@ def test_formula_encoding():
             expected_min_shift = min(formula[i:] + formula[:i] for i in range(n))
             assert min_shift == expected_min_shift
 
+
 def test_enumerate_shapes():
-    for i in range(1,9):
+    for i in range(1, 9):
         assert len(RubiksSnakeCounter.enumerate_shapes(i)[0]) == RubiksSnakeCounter.S[i]
+
 
 def test_list_all_loops():
     assert len(RubiksSnakeCounter.list_all_loops(10)) == 280
