@@ -1,0 +1,24 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  tests-ubuntu:
+    name: Tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+      - name: Install requirements
+        run: |
+          pip install numpy~=1.26 numba~=0.60
+          pip install pytest~=8.3
+      - name: Run tests
+        run: pytest .
