@@ -12,7 +12,7 @@ from typing import Callable
 import numpy as np
 
 
-def _vandermonde(xs,  degree):
+def _vandermonde(xs, degree):
     # Returns matrix of shape (len(xs), degree+1) for powers 0..degree.
     xs = np.asarray(xs)
     return np.vander(xs, N=degree + 1, increasing=True)  # columns x^0, x^1, ...
