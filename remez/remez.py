@@ -1,16 +1,13 @@
-# Python code to implement a workable Remez exchange algorithm (simplified) and a piecewise wrapper
-# The code is self-contained and does not depend on external files. It implements:
-# - remez on a single interval
-# - a piecewise wrapper using binary search for maximal subintervals satisfying error threshold
-# - evaluation and L-infinity error helpers
-#
-# NOTE: This is a practical, tested implementation suitable for experimentation.
-# It aims for robustness rather than formal optimality; the Remez steps use a dense grid
-# to find new extremal points and solves the linear system in the power basis.
-#
-# Example included: approximating sin(x) on [0, pi] with degree 3 and tolerance 1e-3.
-from collections.abc import Callable
+"""Piecewise polynomial approximation of arbitrary function using Remez algorithm.
+
+Reference:
+    Thomas Haner, Martin Roetteler, Krysta M. Svore.
+    Optimizing Quantum Circuits for Arithmetic. 2018.
+    https://arxiv.org/abs/1805.12445
+"""
+
 from dataclasses import dataclass
+from typing import Callable
 
 import numpy as np
 
@@ -25,10 +22,10 @@ def _solve_remez_system(xs, fs, degree, signs):
     # Solve for polynomial coefficients c and error E in
     # sum_{k=0..n} c_k x_i^k + signs[i]*E = f(x_i), for i=0..m-1
     m = len(xs)
-    A = np.zeros((m, degree + 1 + 1))  # extra column for E
-    A[:, : degree + 1] = _vandermonde(xs, degree)
-    A[:, -1] = signs
-    sol, *_ = np.linalg.lstsq(A, fs, rcond=None)
+    a = np.zeros((m, degree + 1 + 1))  # extra column for E
+    a[:, : degree + 1] = _vandermonde(xs, degree)
+    a[:, -1] = signs
+    sol, *_ = np.linalg.lstsq(a, fs, rcond=None)
     coeffs = sol[: degree + 1]
     E = sol[-1]
     return coeffs, E
@@ -38,14 +35,14 @@ def _eval_poly(coefs, x):
     return np.polyval(coefs[::-1], x)
 
 
-def _initial_reference_points(a, b, degree):
+def _initial_reference_points(a: float, b: float, degree):
     # Use Chebyshev nodes mapped to [a,b] as initial reference set (n+2 points).
     m = degree + 2
     k = np.arange(m)
     # Chebyshev nodes in [-1,1].
     cheb = np.cos((2 * k + 1) * np.pi / (2 * m))
-    # Map to [a,b].
-    return 0.5 * (a + b) + 0.5 * (b - a) * cheb[::-1]  # Reverse to have increasing order.
+    # Map to [a,b]. Reverse to have increasing order.
+    return 0.5 * (a + b) + 0.5 * (b - a) * cheb[::-1]
 
 
 def _find_local_extrema(err):
@@ -125,8 +122,8 @@ def remez(
     tol: float = 1e-12,
 ) -> tuple[list[float], float, dict]:
     """
-    Compute minimax polynomial approximation on interval [a,b] of degree `degree`
-    using a simplified Remez exchange algorithm.
+    Computes minimax polynomial approximation on interval [a,b] of degree `degree` using a simplified Remez
+    exchange algorithm.
     Returns: coeffs (power basis increasing), error (estimated max error), info dict.
     """
     a, b = interval
@@ -140,18 +137,18 @@ def remez(
     last_err = None
 
     for it in range(maxiter):
-        # solve for coefficients and error term
+        # Solve for coefficients and error term.
         coeffs, E = _solve_remez_system(xs, fs, degree, signs)
-        # compute error on dense grid
+        # Compute error on dense grid.
         xgrid = np.linspace(a, b, grid_density)
         pgrid = _eval_poly(coeffs, xgrid)
         fgrid = f(xgrid)
         errgrid = fgrid - pgrid
         max_err = np.max(np.abs(errgrid))
-        # find new extremal points with alternating signs
+        # Find new extremal points with alternating signs.
         xs_new, signs_new = _select_alternating_extrema(xgrid, errgrid, degree)
         fs_new = f(xs_new)
-        # check convergence: if xs did not move significantly and max_err stabilised
+        # Check convergence: if xs did not move significantly and max_err stabilised.
         if last_err is not None and abs(max_err - last_err) < tol:
             return (coeffs, max_err, {"iterations": it + 1, "xs": xs, "E": E})
         last_err = max_err
@@ -163,13 +160,15 @@ def remez(
 
 @dataclass(frozen=True)
 class Piece:
-    a: float
-    b: float
-    coefs: list[float]
+    a: float  # Interval start.
+    b: float  # Interval end.
+    coefs: list[float]  # Polynomial coefficients, in increasing power order.
 
 
 @dataclass(frozen=True)
 class PiecewisePolynomial:
+    """Piecewise polynomial."""
+
     pieces: list[Piece]
 
     def eval(self, x):
@@ -183,14 +182,11 @@ class PiecewisePolynomial:
         return y
 
 
-# Piecewise wrapper using binary search for maximal subintervals
 def remez_piecewise(f, interval, degree, error_tol, *, max_subsegment_iters=25) -> PiecewisePolynomial:
-    """
-    Build piecewise polynomial approximation on [a,b] by repeatedly running remez
-    and using binary search to find the largest subinterval starting at current left
-    endpoint that can be approximated with sup-norm <= error_tol.
-    Returns list of tuples: [( (a0,b0), coeffs0 ), ( (a1,b1), coeffs1 ), ... ]
-    coeffs are in increasing-power basis.
+    """Piecewise polynomial approximation of `f` on `interval` of given `degree` with L-inf error <= `error_tol`.
+
+    Builds approximation by repeatedly running `remez` and using binary search to find the largest subinterval starting
+    at current left endpoint that can be approximated with sup-norm <= error_tol.
     """
     error_tol *= 1 - 1e-4
 
@@ -204,36 +200,36 @@ def remez_piecewise(f, interval, degree, error_tol, *, max_subsegment_iters=25) 
         return (err <= error_tol, coeffs, err, info)
 
     while left < b - 1e-15:
-        # first quick check: maybe full remaining interval fits
+        # First quick check: maybe full remaining interval fits.
         ok, coeffs, err, info = can_approx_on(b)
         if ok:
             pieces.append(Piece(left, b, coeffs))
             return PiecewisePolynomial(pieces)
-        # otherwise binary search for largest right endpoint in (left,b] for which approximates OK
+        # Otherwise binary search for largest right endpoint in (left,b] for which approximates OK.
         lo = left + 1e-15
         hi = b
         found_right = None
         for _ in range(max_subsegment_iters):
             mid = 0.5 * (lo + hi)
             ok_mid, coeffs_mid, err_mid, info_mid = can_approx_on(mid)
-            # if approximation succeed on [left, mid], try expand to the right (move lo)
+            # If approximation succeed on [left, mid], try expand to the right (move lo).
             if ok_mid:
                 found_right = (mid, coeffs_mid, err_mid, info_mid)
                 lo = mid  # try larger segment
             else:
                 hi = mid  # shrink
-            # stop if hi-lo is tiny
+            # Stop if hi-lo is tiny.
             if hi - lo < 1e-12 * max(1.0, abs(b - a)):
                 break
         if found_right is None:
-            # segment couldn't be approximated even for very small length -> try tiny delta = left + eps
+            # Segment couldn't be approximated even for very small length -> try tiny delta = left + eps.
             tiny = left + 1e-8 * (b - a)
             if tiny <= left + 1e-18:
-                raise RuntimeError("Cannot approximate function on tiny subinterval starting at {}".format(left))
+                raise RuntimeError(f"Cannot approximate function on tiny subinterval starting at {left}")
             ok_tiny, coeffs_tiny, err_tiny, info_tiny = can_approx_on(tiny)
             if not ok_tiny:
                 raise RuntimeError("Cannot approximate even tiny subinterval; consider increasing degree or tolerance")
-            # accept tiny segment
+            # Accept tiny segment.
             pieces.append(Piece(left, tiny, coeffs_tiny))
             left = tiny
         else:
