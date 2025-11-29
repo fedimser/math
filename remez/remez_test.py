@@ -47,3 +47,15 @@ def test_exp():
 
 def test_arcsin():
     _check_function(np.arcsin, (-0.5, 0.5), 5, 1e-7, max_num_pieces=3)
+
+
+def test_abs():
+    f_approx = remez_piecewise(np.abs, (-100, 100), 1, 1e-7)
+    assert len(f_approx.pieces) == 2
+    p0, p1 = f_approx.pieces
+    assert np.isclose(p0.a, -100)
+    assert np.isclose(p0.b, 0)
+    assert np.allclose(f_approx.pieces[0].coefs, [0, -1])
+    assert np.isclose(p1.a, 0)
+    assert np.isclose(p1.b, 100)
+    assert np.allclose(f_approx.pieces[1].coefs, [0, 1])

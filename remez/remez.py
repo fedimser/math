@@ -31,7 +31,7 @@ def _solve_remez_system(xs, fs, degree, signs):
     return coeffs, E
 
 
-def _eval_poly(coefs, x):
+def _eval_poly(coefs: np.ndarray, x: float):
     return np.polyval(coefs[::-1], x)
 
 
@@ -162,7 +162,7 @@ def remez(
 class Piece:
     a: float  # Interval start.
     b: float  # Interval end.
-    coefs: list[float]  # Polynomial coefficients, in increasing power order.
+    coefs: np.ndarray  # Polynomial coefficients, in increasing power order.
 
 
 @dataclass(frozen=True)
@@ -211,7 +211,7 @@ def remez_piecewise(
         ok, coeffs, err, info = can_approx_on(b)
         if ok:
             pieces.append(Piece(left, b, coeffs))
-            return PiecewisePolynomial(pieces)
+            break
         # Otherwise binary search for largest right endpoint in (left,b] for which approximates OK.
         lo = left + 1e-15
         hi = b
