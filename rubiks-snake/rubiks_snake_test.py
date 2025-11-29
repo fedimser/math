@@ -1,7 +1,13 @@
 import pytest
 
-from rubiks_snake import RubiksSnakeCounter, FACE_IDS_TO_WEDGE_ID, decode_formula, \
-    encode_formula, reverse_encoded_formula, min_cyclic_shift
+from rubiks_snake import (
+    RubiksSnakeCounter,
+    FACE_IDS_TO_WEDGE_ID,
+    decode_formula,
+    encode_formula,
+    reverse_encoded_formula,
+    min_cyclic_shift,
+)
 from rubiks_snake_slow import enumerate_valid_formulas_slow
 
 
@@ -37,14 +43,13 @@ def test_palindromes_slow(n):
 
 
 def test_wedges_facing_up():
-    wedge_ids_facing_up = [wedge_id for faces, wedge_id in FACE_IDS_TO_WEDGE_ID.items() if
-                           faces[1] == 5]
+    wedge_ids_facing_up = [wedge_id for faces, wedge_id in FACE_IDS_TO_WEDGE_ID.items() if faces[1] == 5]
     assert set(wedge_ids_facing_up) == {25, 26, 27, 28}
 
 
 def test_formula_encoding():
     for n in range(1, 7):
-        for code in range(4 ** n):
+        for code in range(4**n):
             formula = decode_formula(code, n)
             assert len(formula) == n
             assert encode_formula(formula) == code

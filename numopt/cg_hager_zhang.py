@@ -46,12 +46,11 @@ class CachedScalarFunction:
         return self.vals.eval(x, lambda y: self.f(self.x0 + y * self.dir))
 
     def full_gradient(self, x, must_be_cached=False):
-        return self.grads.eval(
-            x, lambda y: self.fprime(
-                self.x0 + y * self.dir))
+        return self.grads.eval(x, lambda y: self.fprime(self.x0 + y * self.dir))
 
     def der(self, x):
         return np.dot(self.dir, self.full_gradient(x))
+
 
 # Finds mnimum of the function f using .
 # Arguments:
@@ -77,18 +76,24 @@ class CachedScalarFunction:
 # search.
 
 
-def minimize_hz(f, x0, fprime, maxiter=1000, gtol=1e-4,
-                delta=0.1,
-                sigma=0.9,
-                eps=1e-6,
-                theta=0.5,
-                gamma=0.66,
-                eta=0.01,
-                rho=5.0,
-                psi_0=0.01,
-                psi_1=0.1,
-                psi_2=2.0,
-                quad_step=True):
+def minimize_hz(
+    f,
+    x0,
+    fprime,
+    maxiter=1000,
+    gtol=1e-4,
+    delta=0.1,
+    sigma=0.9,
+    eps=1e-6,
+    theta=0.5,
+    gamma=0.66,
+    eta=0.01,
+    rho=5.0,
+    psi_0=0.01,
+    psi_1=0.1,
+    psi_2=2.0,
+    quad_step=True,
+):
     x_k = x0
     f_k = f(x_k)
     g_k = fprime(x_k)
@@ -122,19 +127,14 @@ def minimize_hz(f, x0, fprime, maxiter=1000, gtol=1e-4,
                 phi_a0 = phi.val(a0)
                 q_koef = phi_a0 - phi_0 - a0 * derphi_0
                 if phi_a0 <= phi_0 and q_koef > 0:
-                    c = - 0.5 * (derphi_0 * a0**2) / q_koef
+                    c = -0.5 * (derphi_0 * a0**2) / q_koef
             if c is None:
                 c = psi_2 * a_km1
 
         # Line search.
-        a_k = hager_zhang_line_search(phi,
-                                      initial_guess=c,
-                                      delta=delta,
-                                      sigma=sigma,
-                                      eps=eps,
-                                      theta=theta,
-                                      gamma=gamma,
-                                      rho=rho)
+        a_k = hager_zhang_line_search(
+            phi, initial_guess=c, delta=delta, sigma=sigma, eps=eps, theta=theta, gamma=gamma, rho=rho
+        )
 
         # Evalutaing new direction.
         x_kp1 = x_k + a_k * d_k
@@ -158,18 +158,11 @@ def minimize_hz(f, x0, fprime, maxiter=1000, gtol=1e-4,
         d_k = d_kp1
         f_k = f_kp1
 
-    #print('Done %d iterations.' % k)
+    # print('Done %d iterations.' % k)
     return x_k
 
 
-def hager_zhang_line_search(phi,
-                            initial_guess=1.0,
-                            delta=0.1,
-                            sigma=0.9,
-                            eps=1e-6,
-                            theta=0.5,
-                            gamma=0.66,
-                            rho=5.0):
+def hager_zhang_line_search(phi, initial_guess=1.0, delta=0.1, sigma=0.9, eps=1e-6, theta=0.5, gamma=0.66, rho=5.0):
     phi_0 = phi.val(0)
     derphi_0 = phi.der(0)
     eps_k = eps * abs(phi_0)
@@ -185,7 +178,7 @@ def hager_zhang_line_search(phi,
                     a = d
                 else:
                     b = d
-        print('Warning. Iterations exceeded in interval_update_u3.')
+        print("Warning. Iterations exceeded in interval_update_u3.")
         return a, b
 
     # Given inital guess [0, c], reduces it to [a,b], for which opposite slope
@@ -202,11 +195,11 @@ def hager_zhang_line_search(phi,
             if phi.val(c_j) <= phi_0 + eps_k:
                 c_i = c_j
             c_j = rho * c_j
-        print('Warning. Iterations exceeded in bracket.')
+        print("Warning. Iterations exceeded in bracket.")
         return c_i, c_j
 
     def interval_update(a, b, c):
-        assert (a < b)
+        assert a < b
         if c <= a or c >= b:
             return a, b
         if phi.der(c) >= 0:
@@ -247,8 +240,7 @@ def hager_zhang_line_search(phi,
             break
 
         # L0. Check T2 (approx Wolfe):
-        if (2 * delta - 1) * derphi_0 >= derphi_a and derphi_a >= sigma * \
-                derphi_0 and phi_a <= phi_0 + eps_k:
+        if (2 * delta - 1) * derphi_0 >= derphi_a and derphi_a >= sigma * derphi_0 and phi_a <= phi_0 + eps_k:
             break
 
         # L1.

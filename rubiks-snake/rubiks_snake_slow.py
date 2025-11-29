@@ -16,8 +16,10 @@ class Wedge:
         return f"({x},{y},{z};{f1}->{f2})"
 
     def get_next(self, rot):
-        return Wedge(self.coord + WEDGE_ID_TO_NEXT_DELTA[self.wedge_id],
-                     ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[self.wedge_id + 36 * rot])
+        return Wedge(
+            self.coord + WEDGE_ID_TO_NEXT_DELTA[self.wedge_id],
+            ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[self.wedge_id + 36 * rot],
+        )
 
     def occ_type(self):
         return self.wedge_id & 15
@@ -44,7 +46,7 @@ def construct_formula(formula: list[int]):
             cubes[next_wedge.coord] = next_wedge.occ_type()
         else:
             assert cubes[next_wedge.coord] > 0
-            can_push = (cubes[next_wedge.coord] + next_wedge.occ_type() == 13)
+            can_push = cubes[next_wedge.coord] + next_wedge.occ_type() == 13
             if not can_push:
                 return None
             cubes[next_wedge.coord] += next_wedge.occ_type()

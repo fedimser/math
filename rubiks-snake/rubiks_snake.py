@@ -5,7 +5,7 @@ import numba
 # Prepare the grid.
 MAX_N = 32
 BOX_SIZE = 2 * (MAX_N // 2) + 1
-DX, DY, DZ = 1, BOX_SIZE, BOX_SIZE ** 2
+DX, DY, DZ = 1, BOX_SIZE, BOX_SIZE**2
 CENTER_COORD = (MAX_N // 2) * (DX + DY + DZ)
 
 # Pre-calculate geometry.
@@ -38,8 +38,7 @@ def _init_globals():
             f2p[3] = 5 - f2p[1]
             WEDGE_ID_TO_NEXT_DELTA[wedge_id] = DELTAS[f1p]
             for rot in range(4):
-                ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[wedge_id + rot * 36] = FACE_IDS_TO_WEDGE_ID[
-                    (f1p, f2p[rot])]
+                ROT_AND_WEDGE_ID_TO_NEXT_WEDGE_ID[wedge_id + rot * 36] = FACE_IDS_TO_WEDGE_ID[(f1p, f2p[rot])]
 
 
 _init_globals()
@@ -69,7 +68,7 @@ def encode_formula(s):
 
 
 def decode_formula(code, length):
-    return ''.join(str((code >> (2 * i)) % 4) for i in range(length))[::-1]
+    return "".join(str((code >> (2 * i)) % 4) for i in range(length))[::-1]
 
 
 @numba.jit("i8(i8,i8)", inline="always")
@@ -86,7 +85,8 @@ def min_cyclic_shift(code, length):
     l = 2 * (length - 1)
     for i in range(length - 1):
         code = (code >> 2) + ((code & 3) << l)
-        if code < ans: ans = code
+        if code < ans:
+            ans = code
     return ans
 
 
@@ -161,7 +161,7 @@ def _add_wedges_from_formula_while_can(formula_code, formula_length, wedges, cub
 def _prepare_arena(n, init_wedge_id):
     wedges = np.zeros(n + 1, dtype=np.int64)
     wedges[0] = n + 1
-    cubes = np.zeros(BOX_SIZE ** 3, dtype=np.int64)
+    cubes = np.zeros(BOX_SIZE**3, dtype=np.int64)
     _push_wedge(CENTER_COORD, init_wedge_id, wedges, cubes)
     return wedges, cubes
 
@@ -182,7 +182,8 @@ def _next_wedge_would_match_head(rot, wedges):
 def _count_shapes_rec(wedges, cubes, total_count):
     last_wedge_index = wedges[0]
     total_count[last_wedge_index] += 1
-    if last_wedge_index == 1: return  # Full length shape, stop recusrion.
+    if last_wedge_index == 1:
+        return  # Full length shape, stop recusrion.
     last_wedge = wedges[wedges[0]]
     last_wedge_id = last_wedge & 63
     last_wedge_coord = last_wedge >> 6
@@ -194,8 +195,7 @@ def _count_shapes_rec(wedges, cubes, total_count):
         return
     if next_cube_occupancy_type == 0 and last_wedge_index == 3:
         c = next_wedge_coord
-        s = cubes[c - DX] + cubes[c + DX] + cubes[c - DY] + cubes[c + DY] + cubes[c - DZ] + cubes[
-            c + DZ]
+        s = cubes[c - DX] + cubes[c + DX] + cubes[c - DY] + cubes[c + DY] + cubes[c - DZ] + cubes[c + DZ]
         if s == cubes[last_wedge_coord]:
             total_count[2] += 4
             total_count[1] += 16
@@ -204,8 +204,7 @@ def _count_shapes_rec(wedges, cubes, total_count):
     for rot in range(4):
         next_wedge_id = _get_next_wedge_id(last_wedge_id, rot)
         next_wedge_occupancy_type = next_wedge_id & 15
-        can_push = next_cube_occupancy_type == 0 or (
-                next_cube_occupancy_type + next_wedge_occupancy_type == 13)
+        can_push = next_cube_occupancy_type == 0 or (next_cube_occupancy_type + next_wedge_occupancy_type == 13)
         if can_push:
             _push_wedge(next_wedge_coord, next_wedge_id, wedges, cubes)
             _count_shapes_rec(wedges, cubes, total_count)
@@ -276,7 +275,7 @@ def _count_palindrome_loops(n):
     n2 = n // 2
     wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
     ans = 0
-    for i in range(4 ** n2):
+    for i in range(4**n2):
         formula = concat_encoded_formulas(i, reverse_encoded_formula(i >> 2, n2 - 1), n2 - 1)
         if _is_loop(formula, n - 1, wedges, cubes):
             ans += 1
@@ -301,16 +300,69 @@ def _enumerate_shapes_rec(wedges, cubes, cur_formula, formulas, last_wedges):
 class RubiksSnakeCounter:
     # Number of formulas of length n-1 describing a valid shape of n-wedge snake.
     # Pre-computed up to n=28.
-    S = [None, 1, 4, 16, 64, 241, 920, 3384, 12585, 46471, 172226, 633138, 2333757, 8561679,
-         31462176, 115247629, 422677188, 1546186675, 5661378449, 20689242550, 75663420126,
-         276279455583, 1009416896015, 3683274847187, 13446591920995, 49037278586475,
-         178904588083788, 652111697384508, 2377810831870022]
+    S = [
+        None,
+        1,
+        4,
+        16,
+        64,
+        241,
+        920,
+        3384,
+        12585,
+        46471,
+        172226,
+        633138,
+        2333757,
+        8561679,
+        31462176,
+        115247629,
+        422677188,
+        1546186675,
+        5661378449,
+        20689242550,
+        75663420126,
+        276279455583,
+        1009416896015,
+        3683274847187,
+        13446591920995,
+        49037278586475,
+        178904588083788,
+        652111697384508,
+        2377810831870022,
+    ]
 
     # Number of formulas of length n-1 describing a loop of n-wedge snake.
     # Equivalent: number of loop-formulas of length n describing a loop of n-wedge snake.
     # Pre-computed up to n=25.
-    L1 = [None, 0, 0, 0, 1, 0, 8, 0, 16, 0, 280, 0, 2229, 0, 20720, 0, 226000, 0, 2293422, 0,
-          24965960, 0, 275633094, 0, 3069890660, 0]
+    L1 = [
+        None,
+        0,
+        0,
+        0,
+        1,
+        0,
+        8,
+        0,
+        16,
+        0,
+        280,
+        0,
+        2229,
+        0,
+        20720,
+        0,
+        226000,
+        0,
+        2293422,
+        0,
+        24965960,
+        0,
+        275633094,
+        0,
+        3069890660,
+        0,
+    ]
 
     @staticmethod
     def count_all_shapes(n):
@@ -351,7 +403,7 @@ class RubiksSnakeCounter:
         if n % 2 == 1:
             return []
         wedges, cubes = _prepare_arena(n + 1, INIT_WEDGE)
-        return [i for i in range(4 ** n) if _is_loop(i, n, wedges, cubes)]
+        return [i for i in range(4**n) if _is_loop(i, n, wedges, cubes)]
 
     def __init__(self):
         self.wedges, self.cubes = _prepare_arena(MAX_N, INIT_WEDGE)
@@ -359,6 +411,6 @@ class RubiksSnakeCounter:
     def is_formula_valid(self, formula: str) -> bool:
         n = len(formula)
         enc = encode_formula(formula)
-        ans = (_add_wedges_from_formula_while_can(enc, n, self.wedges, self.cubes) == n)
+        ans = _add_wedges_from_formula_while_can(enc, n, self.wedges, self.cubes) == n
         _pop_all_but_one(self.wedges, self.cubes)
         return ans

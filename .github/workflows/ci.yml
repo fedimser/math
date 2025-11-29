@@ -7,6 +7,15 @@ on:
     branches: [ master ]
 
 jobs:
+  format-check:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install black
+        run: pip install black
+      - name: Run black
+        run: black --check --diff --line-length=120 .
   tests-ubuntu:
     name: Tests (Ubuntu)
     runs-on: ubuntu-latest
