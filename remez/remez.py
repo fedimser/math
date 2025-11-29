@@ -12,7 +12,6 @@
 from dataclasses import dataclass
 
 import numpy as np
-import warnings
 
 def _vandermonde(xs, degree):
     # returns matrix of shape (len(xs), degree+1) for powers 0..degree
@@ -59,18 +58,18 @@ def _find_local_extrema(xgrid, err):
     return np.nonzero(mask)[0]
 
 def _select_alternating_extrema(xgrid, err, degree):
-    # Heuristic: find local extrema and then pick degree+2 points with alternating signs
+    # Heuristic: find local extrema and then pick degree+2 points with alternating signs.
     idxs = _find_local_extrema(xgrid, err)
     if len(idxs) == 0:
-        # fallback to evenly spaced points
+        # Fallback to evenly spaced points.
         m = degree + 2
         return np.linspace(xgrid[0], xgrid[-1], m)
-    # sort by |err| descending and pick top few candidates, then sort them
+    # Sort by |err| descending and pick top few candidates, then sort them.
     cand = idxs[np.argsort(-np.abs(err[idxs]))]
     m = degree + 2
     chosen = []
     chosen_set = set()
-    # Try to pick points across the domain to promote alternation and spacing
+    # Try to pick points across the domain to promote alternation and spacing.
     for j in cand:
         xj = xgrid[j]
         if len(chosen) == 0:
@@ -141,8 +140,6 @@ def remez(f, degree, interval, maxiter=30, grid_density=2000, tol=1e-12) -> tupl
         xs = xs_new
         signs = signs_new
         fs = fs_new
-    # warn if not converged
-    warnings.warn("Remez did not converge within maxiter; returning latest result")
     return coeffs, max_err, {"iterations": maxiter, "xs": xs, "E": E}
 
 @dataclass(frozen=True)
@@ -183,7 +180,7 @@ def remez_piecewise(f, interval, degree, error_tol, *, max_subsegment_iters=25) 
 
     def can_approx_on(right):
         # try remez on [left, right]; return (success, coeffs, err)
-        coeffs, err, info = remez(f, degree, (left, right))
+        coeffs, err, info = remez(f, degree, (left, right), tol=error_tol)
         return (err <= error_tol, coeffs, err, info)
 
     while left < b - 1e-15:
