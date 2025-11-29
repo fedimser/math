@@ -12,7 +12,7 @@ from typing import Callable
 import numpy as np
 
 
-def _vandermonde(xs, degree):
+def _vandermonde(xs,  degree):
     # Returns matrix of shape (len(xs), degree+1) for powers 0..degree.
     xs = np.asarray(xs)
     return np.vander(xs, N=degree + 1, increasing=True)  # columns x^0, x^1, ...
@@ -182,7 +182,14 @@ class PiecewisePolynomial:
         return y
 
 
-def remez_piecewise(f, interval, degree, error_tol, *, max_subsegment_iters=25) -> PiecewisePolynomial:
+def remez_piecewise(
+    f: Callable[[float], float],
+    interval: tuple[float, float],
+    degree: int,
+    error_tol: float,
+    *,
+    max_subsegment_iters: int = 25,
+) -> PiecewisePolynomial:
     """Piecewise polynomial approximation of `f` on `interval` of given `degree` with L-inf error <= `error_tol`.
 
     Builds approximation by repeatedly running `remez` and using binary search to find the largest subinterval starting
