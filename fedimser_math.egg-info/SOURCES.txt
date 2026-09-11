@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+fedimser_math.egg-info/PKG-INFO
+fedimser_math.egg-info/SOURCES.txt
+fedimser_math.egg-info/dependency_links.txt
+fedimser_math.egg-info/requires.txt
+fedimser_math.egg-info/top_level.txt
+numopt/cg_hager_zhang.py
+numopt/test_cases.py
+remez/remez.py
+remez/remez_test.py
+rubiks-snake/rubiks_snake.py
+rubiks-snake/rubiks_snake_slow.py
+rubiks-snake/rubiks_snake_test.py

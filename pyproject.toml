@@ -20,5 +20,9 @@ dependencies = [
     "scipy>=1.18",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["numopt*", "remez*", "rubiks-snake*"]
+
 [tool.black]
 line-length = 120
