@@ -1,3 +1,0 @@
-numopt
-remez
-rubiks-snake

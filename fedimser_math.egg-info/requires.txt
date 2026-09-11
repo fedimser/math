@@ -1,4 +1,0 @@
-numba>=0.67
-numpy>=2.5
-pytest>=8.4.0
-scipy>=1.18
