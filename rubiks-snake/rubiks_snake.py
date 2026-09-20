@@ -414,3 +414,323 @@ class RubiksSnakeCounter:
         ans = _add_wedges_from_formula_while_can(enc, n, self.wedges, self.cubes) == n
         _pop_all_but_one(self.wedges, self.cubes)
         return ans
+
+
+# ================   CERTIFIED ASYMPTOTIC BOUNDS   ===================
+from collections.abc import Mapping, Sequence
+from fractions import Fraction
+from operator import index as _index
+
+
+def _bound_integer(value: int, name: str, minimum: int = 0) -> int:
+    value = _index(value)
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}")
+    return value
+
+
+_SLAB_DIRECTIONS = np.array(
+    [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)], dtype=np.int64
+)
+_SLAB_CORNERS = np.zeros((6, 6), dtype=np.uint8)
+_SLAB_COMPLEMENTS = np.zeros(37, dtype=np.uint8)
+for _incoming in range(6):
+    for _outgoing in range(6):
+        _a, _b = sorted((_incoming ^ 1, _outgoing))
+        _SLAB_CORNERS[_incoming, _outgoing] = 6 * _a + _b + 1
+        _ca, _cb = sorted((_a ^ 1, _b ^ 1))
+        _SLAB_COMPLEMENTS[6 * _a + _b + 1] = 6 * _ca + _cb + 1
+
+
+@numba.njit(inline="always")
+def _increment_slab_count(counts, length):
+    if counts[length] == 9223372036854775807:
+        raise OverflowError("slab count exceeds int64; use an arbitrary-precision enumerator")
+    counts[length] += 1
+
+
+@numba.njit
+def _slab_search(width, limit, x, y, z, incoming, length, occupancy, counts):
+    side = 2 * limit + 1
+    position = (x * side + y + limit) * side + z + limit
+    previous = occupancy[position]
+    if x == width and incoming // 2 != 0:
+        corner = _SLAB_CORNERS[incoming, 0]
+        if previous == 0 or (previous != 255 and corner == _SLAB_COMPLEMENTS[previous]):
+            _increment_slab_count(counts, length)
+    if length == limit:
+        return
+    for outgoing in range(6):
+        if outgoing // 2 == incoming // 2:
+            continue
+        nx = x + _SLAB_DIRECTIONS[outgoing, 0]
+        if nx < 0 or nx > width:
+            continue
+        corner = _SLAB_CORNERS[incoming, outgoing]
+        if previous == 0:
+            occupancy[position] = corner
+        elif previous != 255 and corner == _SLAB_COMPLEMENTS[previous]:
+            occupancy[position] = 255
+        else:
+            continue
+        _slab_search(
+            width, limit, nx, y + _SLAB_DIRECTIONS[outgoing, 1],
+            z + _SLAB_DIRECTIONS[outgoing, 2], outgoing, length + 1, occupancy, counts
+        )
+        occupancy[position] = previous
+
+
+def slab_counts(width: int, max_length: int) -> list[int]:
+    """Count exact slab blocks by internal edge length, including both boundary wedges.
+
+    The incoming and outgoing directions are +x; internal vertices stay in
+    0 <= x <= width. The returned row at index l is B[width+1, l+1].
+    Memory is O((width+1)*max_length**2); search time is exponential.
+    Counts use checked int64 increments, then convert to Python integers.
+    """
+    width = _bound_integer(width, "width")
+    max_length = _bound_integer(max_length, "max_length")
+    if max_length < 2 * width + 1:
+        return [0] * (max_length + 1)
+    occupancy = np.zeros((width + 1) * (2 * max_length + 1) ** 2, dtype=np.uint8)
+    counts = np.zeros(max_length + 1, dtype=np.int64)
+    _slab_search(width, max_length, 0, 0, 0, 0, 0, occupancy, counts)
+    return counts.tolist()
+
+
+def _renewal_counts(counts: Sequence[int]) -> list[int]:
+    result = [_bound_integer(c, "block count") for c in counts]
+    if not result or not any(result):
+        raise ValueError("at least one block count must be positive")
+    return result
+
+
+def irreducible_slab_counts(raw: Mapping[int, Sequence[int]]) -> list[int]:
+    """Extract known irreducibles from B=1/(1-I), using exact Python integers.
+
+    Keys are consecutive progress values 1,...,D. Rows are indexed by internal
+    length l, not total block length l+1. Row lengths must be nonincreasing;
+    this ensures that every coefficient needed by the convolution is known.
+    Unknown irreducible tails are omitted only after coefficient extraction.
+    """
+    if not raw or sorted(raw) != list(range(1, len(raw) + 1)):
+        raise ValueError("raw tables must have consecutive progress keys 1,...,D")
+    rows = {d: [_bound_integer(c, "block count") for c in row] for d, row in raw.items()}
+    sizes = [len(rows[d]) for d in range(1, len(rows) + 1)]
+    if not all(sizes) or sizes != sorted(sizes, reverse=True):
+        raise ValueError("raw row lengths must be positive and nonincreasing in progress")
+    for d, row in rows.items():
+        if any(row[:min(2 * d - 1, len(row))]):
+            raise ValueError("a block of progress d requires at least 2*d-1 internal edges")
+    irreducibles: dict[int, list[int]] = {}
+    total = [0] * sizes[0]
+    for d in range(1, len(rows) + 1):
+        row = rows[d].copy()
+        for length in range(len(row)):
+            for left_d in range(1, d):
+                for left_length in range(length):
+                    row[length] -= (
+                        irreducibles[left_d][left_length]
+                        * rows[d - left_d][length - left_length - 1]
+                    )
+            if row[length] < 0:
+                raise ValueError("raw tables give a negative irreducible coefficient")
+            total[length] += row[length]
+        irreducibles[d] = row
+    return total
+
+
+def renewal_polynomial_value(counts: Sequence[int], numerator: int, denominator: int) -> int:
+    """Return denominator**L * P(numerator/denominator), exactly.
+
+    L=len(counts), P(x)=x**L-sum(counts[l]*x**(L-l-1)).
+    Counts are indexed by internal length; a block uses l+1 letters.
+    """
+    counts = _renewal_counts(counts)
+    numerator = _bound_integer(numerator, "numerator")
+    denominator = _bound_integer(denominator, "denominator", 1)
+    value = 1
+    power = 1
+    for count in counts:
+        power *= denominator
+        value = numerator * value - count * power
+    return value
+
+
+def renewal_lower_bound(counts: Sequence[int], denominator: int = 10**9) -> Fraction:
+    """Largest positive grid point p/denominator strictly below the renewal root."""
+    counts = _renewal_counts(counts)
+    denominator = _bound_integer(denominator, "denominator", 1)
+    low, high = 0, denominator
+    while renewal_polynomial_value(counts, high, denominator) < 0:
+        high *= 2
+    while high - low > 1:
+        middle = (low + high) // 2
+        if renewal_polynomial_value(counts, middle, denominator) < 0:
+            low = middle
+        else:
+            high = middle
+    if low == 0:
+        raise ValueError("denominator is too small for a positive strict lower bound")
+    return Fraction(low, denominator)
+
+
+def renewal_values(counts: Sequence[int], max_length: int) -> list[int]:
+    """Return c[0],...,c[max_length]; c[k] <= S[k+2]."""
+    counts = _renewal_counts(counts)
+    max_length = _bound_integer(max_length, "max_length")
+    values = [1] + [0] * max_length
+    for k in range(1, max_length + 1):
+        values[k] = sum(counts[l] * values[k - l - 1] for l in range(min(k, len(counts))))
+    return values
+
+
+def renewal_lower_prefactor(counts: Sequence[int], bound: Fraction, start: int = 2) -> Fraction:
+    """Certify c[k] >= a*bound**k for k>=start by a finite induction base."""
+    counts = _renewal_counts(counts)
+    start = _bound_integer(start, "start")
+    if not isinstance(bound, Fraction) or bound <= 0:
+        raise ValueError("bound must be a positive Fraction")
+    if renewal_polynomial_value(counts, bound.numerator, bound.denominator) > 0:
+        raise ValueError("bound exceeds the renewal root")
+    values = renewal_values(counts, start + len(counts) - 1)
+    factor = min(Fraction(values[k], 1) / bound**k for k in range(start, len(values)))
+    if factor <= 0:
+        raise ValueError("no positive prefactor: the induction base contains a zero")
+    return factor
+
+
+def window_graph(m: int) -> tuple[np.ndarray, np.ndarray, int]:
+    """Edges of the full valid-window graph, A[target,source]=1.
+
+    State words have m symbols. Enumeration is supported through m+2=20
+    wedges by the existing enumerator, although memory becomes prohibitive
+    well before that limit. No state or edge is silently omitted.
+    """
+    m = _bound_integer(m, "m", 1)
+    if m > 18:
+        raise ValueError("the existing word enumerator supports m <= 18")
+    states, _ = RubiksSnakeCounter.enumerate_shapes(m + 1)
+    windows, _ = RubiksSnakeCounter.enumerate_shapes(m + 2)
+    states.sort()
+    prefix, suffix = windows >> 2, windows & ((1 << (2 * m)) - 1)
+    source, target = np.searchsorted(states, prefix), np.searchsorted(states, suffix)
+    if np.any(source >= len(states)) or np.any(target >= len(states)):
+        raise RuntimeError("a window endpoint is absent from the state table")
+    if not np.array_equal(states[source], prefix) or not np.array_equal(states[target], suffix):
+        raise RuntimeError("a window endpoint is absent from the state table")
+    return source, target, len(states)
+
+
+def _window_cyclic_core(source, target, size):
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import connected_components
+
+    adjacency = csr_matrix((np.ones(len(source), dtype=np.uint8), (source, target)), shape=(size, size))
+    component_count, labels = connected_components(adjacency, directed=True, connection="strong")
+    cyclic = np.bincount(labels, minlength=component_count) > 1
+    cyclic[labels[source[source == target]]] = True
+    active = cyclic[labels]
+    renumber = np.full(size, -1, dtype=np.int64)
+    renumber[active] = np.arange(np.count_nonzero(active))
+    _, active_labels = np.unique(labels[active], return_inverse=True)
+    internal = active[source] & active[target] & (labels[source] == labels[target])
+    return renumber[source[internal]], renumber[target[internal]], active_labels, int(active.sum())
+
+
+def _integer_vector(values, name):
+    values = np.asarray(values)
+    if values.ndim != 1 or values.size == 0 or values.dtype.kind not in "iu":
+        raise ValueError(f"{name} must be a nonempty integer vector")
+    if values.dtype.kind == "i" and np.any(values < 0):
+        raise ValueError(f"{name} must be nonnegative")
+    return values.astype(np.uint64, copy=False)
+
+
+def verify_vector_bound(image: np.ndarray, vector: np.ndarray, bound: Fraction) -> bool:
+    """Check image <= bound*vector with exact, overflow-free arithmetic.
+
+    Split v at the denominator to compute floor(bound*v) without forming
+    products such as 10**9 * 10**12. Unusual scales use Python integers.
+    """
+    image, vector = _integer_vector(image, "image"), _integer_vector(vector, "vector")
+    if image.shape != vector.shape or np.any(vector == 0):
+        raise ValueError("image and positive vector must have the same shape")
+    if not isinstance(bound, Fraction) or bound < 0:
+        raise ValueError("bound must be a nonnegative Fraction")
+    p, d = bound.numerator, bound.denominator
+    maximum = int(vector.max())
+    limit = int(np.iinfo(np.uint64).max)
+    whole, remainder = divmod(p, d)
+    if d <= limit and p * maximum // d <= limit and remainder * (d - 1) <= limit:
+        for start in range(0, len(vector), 1_000_000):
+            v = vector[start:start + 1_000_000]
+            ceiling = whole * v + remainder * (v // d) + (remainder * (v % d)) // d
+            if np.any(image[start:start + len(v)] > ceiling):
+                return False
+        return True
+    return all(d * int(a) <= p * int(v) for a, v in zip(image, vector))
+
+
+def _exact_window_image(source, target, vector, size):
+    degree = np.bincount(target, minlength=size)
+    if int(degree.max()) * int(vector.max()) > int(np.iinfo(np.uint64).max):
+        raise OverflowError("integer matrix-vector product would overflow uint64; reduce scale")
+    image = np.zeros(size, dtype=np.uint64)
+    np.add.at(image, target, vector[source])
+    return image
+
+
+def window_upper_bound(
+    m: int, iterations: int = 500, scale: int = 10**12,
+    denominator: int = 10**9, full_graph: bool = False
+) -> dict:
+    """Return a rigorous Fraction upper bound and certificate statistics.
+
+    Default: independently normalized cyclic SCCs certify spectral radius.
+    full_graph=True: unshifted power iteration on the entire graph also
+    provides a pointwise prefactor H=sum(v)/min(v), starting at n=m+1.
+    A poor iteration gives a weaker bound, never an unverified estimate.
+    """
+    iterations = _bound_integer(iterations, "iterations", 1)
+    scale = _bound_integer(scale, "scale", 1)
+    denominator = _bound_integer(denominator, "denominator", 1)
+    if scale > 2**53 or denominator > 2**53:
+        raise ValueError("scale and denominator must not exceed 2**53")
+    source, target, size = window_graph(m)
+    full_states, full_edges = size, len(source)
+    labels = np.empty(0, dtype=np.int64)
+    if not full_graph:
+        source, target, labels, size = _window_cyclic_core(source, target, size)
+    if not size:
+        raise RuntimeError("the window graph contains no directed cycle")
+    x = np.ones(size, dtype=np.float64)
+    component_count = int(labels.max()) + 1 if labels.size else 0
+    for _ in range(iterations):
+        y = np.bincount(target, weights=x[source], minlength=size)
+        if full_graph:
+            x = y / y.max() + np.finfo(np.float64).tiny
+        else:
+            y += x
+            norms = np.zeros(component_count, dtype=np.float64)
+            np.maximum.at(norms, labels, y)
+            x = y / norms[labels]
+    if not np.all(np.isfinite(x)):
+        raise ArithmeticError("nonfinite candidate vector")
+    vector = np.maximum(1, np.rint(x * scale)).astype(np.uint64)
+    image = _exact_window_image(source, target, vector, size)
+    numerator = int(np.ceil(float(np.max(image / vector)) * denominator))
+    bound = Fraction(numerator, denominator)
+    while not verify_vector_bound(image, vector, bound):
+        numerator += 1
+        bound = Fraction(numerator, denominator)
+    # Python's sum must be used: the full vector sum can overflow uint64.
+    vector_sum = sum(map(int, vector))
+    vector_min = int(vector.min())
+    return {
+        "bound": bound, "states": size, "edges": len(source),
+        "full_states": full_states, "full_edges": full_edges,
+        "vector_min": vector_min, "vector_sum": vector_sum,
+        "iterations": iterations, "full_graph": full_graph,
+        "pointwise_factor": Fraction(vector_sum, vector_min) if full_graph else None,
+    }
