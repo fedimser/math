@@ -1,6 +1,7 @@
 \documentclass[conference]{IEEEtran}
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
 
 \newtheorem{theorem}{Theorem}
@@ -175,32 +176,32 @@ the new wedge fails the collision rule. Recording the number of
 successful prefixes gives all counts through the chosen length.
 The implementation stores the occupancy type of each visited cube
 and precomputes the 24 ordered wedge orientations and their
-rotation transitions. No floating-point geometry is needed.
+rotation transitions. No floating-point geometry is needed. The 
+notebook \texttt{count-shapes.ipynb} describes this enumeration.
 
-The existing notebook \texttt{count-shapes.ipynb} describes this
-enumeration; the stored sequence extends through 28 wedges.
-Selected terms appear in Table~\ref{tab:counts}. Long unrestricted
-enumeration is expensive, so our bounds use shorter local windows
-and specially constrained paths rather than additional terms of
-$S_n$.
+The first 24 terms ($S_1 \dots S_{24}$) are: 
+$1$, $4$, $16$, $64$, $241$, $920$, $3\,384$, $12\,585$,
+$46\,471$, $172\,226$, $633\,138$, $2\,333\,757$, $8\,561\,679$,
+$31\,462\,176$, $115\,247\,629$, $422\,677\,188$,
+$1\,546\,186\,675$, $5\,661\,378\,449$, $20\,689\,242\,550$,
+$75\,663\,420\,126$, $276\,279\,455\,583$, $1\,009\,416\,896\,015$,
+$3\,683\,274\,847\,187$, $13\,446\,591\,920\,995$. 
+The sequence is also available at \cite{oeisA375865}, currently computed up to
+$n=28$.
 
-\begin{table}[t]
-\caption{Selected exact counts of valid formulas~\cite{oeisA375865}.}
-\label{tab:counts}
+Plot of $S_n$ in semi-log scale is visually indistingusihable from 
+a line. It's more interesting to plot $r_n=S_{n+1}/S_n$, which is shown in
+Fig.~\ref{fig:rn}. This plot suggests that $S_n \sim C \cdot \mu^n$ where
+$\mu \approx 3.64$. The rest of the paper is devoted to fomalizing this 
+hypothesis.
+
+\begin{figure}[t]
 \centering
-\begin{tabular}{r|r@{\qquad}r|r}
-$n$ & $S_n$ & $n$ & $S_n$\\ \hline
-1 & 1 & 8 & 12\,585\\
-2 & 4 & 9 & 46\,471\\
-3 & 16 & 10 & 172\,226\\
-4 & 64 & 12 & 2\,333\,757\\
-5 & 241 & 16 & 422\,677\,188\\
-6 & 920 & 20 & 75\,663\,420\,126\\
-7 & 3\,384 & 24 & 13\,446\,591\,920\,995\\ \hline
-\multicolumn{2}{r}{$n=28$:} &
-\multicolumn{2}{l}{$S_{28}=2\,377\,810\,831\,870\,022$}
-\end{tabular}
-\end{table}
+\includegraphics[width=\columnwidth]{rn_plot.png}
+\caption{Consecutive ratios $r_n=S_{n+1}/S_n$ for
+$1\leq n\leq27$.}
+\label{fig:rn}
+\end{figure}
 
 \section{Exponential growth}
 
@@ -224,42 +225,103 @@ In particular $S_n=\mu^{n+o(n)}$ and
 $\lim_{n\to\infty}S_n^{1/n}=\mu$.
 \end{theorem}
 \begin{proof}
-Set $a_k=S_{k+1}$, with $a_0=1$. Splitting a valid word after $p$
-symbols is an injection into pairs of valid words of lengths
-$p$ and $q$, by Lemma~\ref{lem:heredity}. Hence
-$a_{p+q}\leq a_pa_q$.
-For an elementary subadditivity argument, fix $k\geq1$ and write
-$N=tk+r$, $0\leq r<k$. Then
-$a_N\leq a_k^t a_r$, so
-$\limsup_N N^{-1}\log a_N\leq k^{-1}\log a_k$.
-Taking the infimum over $k$ gives the reverse inequality to the
-one that holds for every term. This proves convergence and
-\eqref{eq:mu}.
+Let $a_k=S_{k+1}$ count valid words of length $k$, with $a_0=1$.
+Splitting a valid word of length $p+q$ after its first $p$ symbols
+gives two valid words, by Lemma~\ref{lem:heredity}.
+The pair determines the original word, so distinct words give
+distinct pairs. There are at most $a_pa_q$ such pairs; hence
+\[
+ a_{p+q}\leq a_pa_q.
+\]
+
+We will show that $(\log a_N)/N$ converges to
+\[
+ L=\inf_{k\geq1}\frac{\log a_k}{k}.
+\]
+By definition of the infimum, $(\log a_N)/N\geq L$ for every
+$N\geq1$. It remains to obtain an upper bound approaching $L$.
+
+Fix a block length $k$. Write $N=tk+r$, where $0\leq r<k$:
+a word of length $N$ consists of $t$ blocks of length $k$
+and a final block of length $r$. Applying the preceding
+inequality repeatedly gives
+\[
+ a_N\leq a_k^t a_r\leq a_k^{N/k}4^{k-1}.
+\]
+The second inequality uses $t\leq N/k$, $a_k\geq1$, and
+$a_r\leq4^r\leq4^{k-1}$. Taking logarithms and dividing by $N$,
+we therefore have
+\[
+ L\leq\frac{\log a_N}{N}
+ \leq\frac{\log a_k}{k}+\frac{(k-1)\log4}{N}.
+\]
+Given any $\varepsilon>0$, choose $k$ so that
+$(\log a_k)/k<L+\varepsilon/2$, as the definition of $L$
+allows. Keep this $k$ fixed and take $N$ large enough that
+$(k-1)\log4/N<\varepsilon/2$. Then
+$L\leq(\log a_N)/N<L+\varepsilon$, proving convergence to $L$.
+
+Since exponentiation is continuous and increasing, it follows that
+\[
+ a_N^{1/N}\longrightarrow e^L
+ =\inf_{k\geq1}a_k^{1/k}.
+\]
+Setting $\mu=e^L$ and $N=n-1$ proves \eqref{eq:mu}.
+Finally, $\log S_n=(n-1)(\log\mu+o(1))
+=n\log\mu+o(n)$. This gives $S_n^{1/n}\to\mu$ and, since
+the elementary lower bound gives $\mu\geq2$,
+$S_n=\mu^{n+o(n)}$.
 \end{proof}
 
-This conclusion permits oscillating consecutive ratios
-$S_{n+1}/S_n$. It does not assert either convergence of those
-ratios or an asymptotic equivalence $S_n\sim C\mu^n$.
 
 \subsection{Lower bounds from slab renewals}\label{sec:lower}
 
 \subsubsection{Separated blocks}
-Fix $+e_x$ as a progress direction. For $w\geq0$, a
-\emph{slab block} consists of a path of $\ell$ internal edges
-starting at $(0,0,0)$, staying in $0\leq x\leq w$, and ending
-in the plane $x=w$. It has a prescribed incoming $+e_x$ edge
-at its start and an outgoing $+e_x$ edge at its end.
-Consecutive directions, including these two boundary directions,
-must be perpendicular. All $\ell+1$ wedges in the slab must
-satisfy the exact collision rule. Neither external endpoint
-is a wedge of the block.
+Fix $+e_x$ as a progress direction. For a nonnegative integer $w$,
+call the union of lattice cubes whose centers satisfy
+$0\leq x\leq w$ a \emph{slab}. It consists of $w+1$ parallel
+layers of cubes and extends indefinitely in the $y$ and $z$
+directions. The restriction is on cube centers, not on every
+point of a wedge.
 
-The outgoing edge enters a fresh slab. Translating successive
-blocks so that each starts just beyond the preceding slab
-therefore gives a valid path. The two natural sizes of a block
-are its progress $d=w+1$ and its length $j=\ell+1$ (internal
-edges plus the outgoing edge). Write $B_{d,j}$ for the number
-of blocks of these sizes, with the starting point fixed.
+A \emph{slab block} is a valid snake segment confined to this
+slab, with the following entry and exit conditions:
+\begin{itemize}
+\item Its first cube is centered at $(0,0,0)$, and it is entered
+by a $+e_x$ step from $(-1,0,0)$.
+\item Its last cube is centered at some $q=(w,y,z)$, and it is
+left by a $+e_x$ step to $q+e_x$.
+\end{itemize}
+Here steps join successive cube centers. If there are $\ell$
+steps between the first and last centers, the block contains
+$\ell+1$ wedges, including both end wedges. The prescribed
+entry and exit steps determine their entrance and exit faces;
+the two exterior endpoints do not contribute wedges to the block.
+Consecutive steps, including the entry and exit steps, must be
+perpendicular, and all wedges of the block must satisfy the
+exact collision rule. The internal path may move backward in
+$x$, provided it never leaves the slab.
+
+For example, when $w=1$, the internal steps
+$+e_y,+e_x,+e_y$ form a slab block: its four cube centers
+have $x$-coordinates $0,0,1,1$, and both the entry and exit
+steps are $+e_x$.
+
+The purpose of these boundary conditions is to allow safe
+concatenation. Translate the next block so that its first cube
+is the cube reached by the preceding block's exit step.
+That step is also the next block's entry step. Successive
+blocks then occupy disjoint sets of cube layers, so wedges
+from different blocks cannot overlap in positive volume.
+
+We record two sizes of a block. Its \emph{progress} is
+$d=w+1$, the net increase in $x$ from its first cube to the
+first cube of the next block. Its \emph{length} is
+$j=\ell+1$: we count its internal steps and its exit step,
+but not its entry step, so each joining step is counted once.
+The example above has $d=2$ and $j=4$.
+Write $B_{d,j}$ for the number of blocks of these sizes,
+with the starting point fixed.
 In particular $B_{d,j}=0$ for $j<2d$: every one of the at
 least $d-1$ internal forward steps must be separated from the
 next, and from each boundary edge, by a transverse step.
