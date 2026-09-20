@@ -92,9 +92,12 @@ def test_list_all_loops():
 
 def test_direction_convention():
     directions = {
-        DX: np.array([1, 0, 0]), -DX: np.array([-1, 0, 0]),
-        DY: np.array([0, 1, 0]), -DY: np.array([0, -1, 0]),
-        DZ: np.array([0, 0, 1]), -DZ: np.array([0, 0, -1]),
+        DX: np.array([1, 0, 0]),
+        -DX: np.array([-1, 0, 0]),
+        DY: np.array([0, 1, 0]),
+        -DY: np.array([0, -1, 0]),
+        DZ: np.array([0, 0, 1]),
+        -DZ: np.array([0, 0, -1]),
     }
     for wedge, (entrance, _) in WEDGE_ID_TO_FACE_IDS.items():
         incoming = directions[DELTAS[entrance]]
@@ -112,8 +115,11 @@ def _geometry_slab_counts(width, limit):
     counts = [0] * (limit + 1)
 
     def next_rotation(wedge, direction):
-        matches = [(str(r), _get_next_wedge_id(wedge, r)) for r in range(4)
-                   if WEDGE_ID_TO_NEXT_DELTA[_get_next_wedge_id(wedge, r)] == deltas[direction]]
+        matches = [
+            (str(r), _get_next_wedge_id(wedge, r))
+            for r in range(4)
+            if WEDGE_ID_TO_NEXT_DELTA[_get_next_wedge_id(wedge, r)] == deltas[direction]
+        ]
         assert len(matches) == 1
         return matches[0]
 
@@ -150,13 +156,81 @@ def test_plane_complementary_revisits():
 @pytest.fixture
 def published_slab_tables():
     return {
-        1: [0, 4, 8, 16, 24, 40, 72, 136, 224, 392, 712, 1272, 2168,
-            3840, 6832, 12112, 20904, 36856, 65192, 115096, 199368,
-            350696, 618032, 1087696, 1887888, 3314376, 5825784, 10230736, 17775440],
-        2: [0, 0, 0, 16, 64, 192, 448, 1096, 2960, 8688, 25264, 71768,
-            199984, 553568, 1536880, 4276240, 11894352, 33015408, 91581712, 253615768, 702030784],
-        3: [0, 0, 0, 0, 0, 64, 384, 1536, 4736, 13760, 41088, 129536,
-            412160, 1293608, 4005936, 12395208, 38595792, 120780664, 378267416],
+        1: [
+            0,
+            4,
+            8,
+            16,
+            24,
+            40,
+            72,
+            136,
+            224,
+            392,
+            712,
+            1272,
+            2168,
+            3840,
+            6832,
+            12112,
+            20904,
+            36856,
+            65192,
+            115096,
+            199368,
+            350696,
+            618032,
+            1087696,
+            1887888,
+            3314376,
+            5825784,
+            10230736,
+            17775440,
+        ],
+        2: [
+            0,
+            0,
+            0,
+            16,
+            64,
+            192,
+            448,
+            1096,
+            2960,
+            8688,
+            25264,
+            71768,
+            199984,
+            553568,
+            1536880,
+            4276240,
+            11894352,
+            33015408,
+            91581712,
+            253615768,
+            702030784,
+        ],
+        3: [
+            0,
+            0,
+            0,
+            0,
+            0,
+            64,
+            384,
+            1536,
+            4736,
+            13760,
+            41088,
+            129536,
+            412160,
+            1293608,
+            4005936,
+            12395208,
+            38595792,
+            120780664,
+            378267416,
+        ],
     }
 
 
@@ -170,8 +244,7 @@ def test_irreducible_reconstruction(published_slab_tables):
         previous = total
         for length in range(10):
             reconstructed = irreducibles[d][length] + sum(
-                irreducibles[a][b] * raw[d - a][length - b - 1]
-                for a in range(1, d) for b in range(length)
+                irreducibles[a][b] * raw[d - a][length - b - 1] for a in range(1, d) for b in range(length)
             )
             assert reconstructed == raw[d][length]
     assert previous == [0, 4, 8, 16, 24, 40, 72, 272, 1200, 4984]
@@ -199,11 +272,18 @@ def test_renewal_exact_root_and_periodicity():
         renewal_lower_prefactor([0, 4], Fraction(3))
 
 
-@pytest.mark.parametrize("raw", [
-    {}, {2: [0, 0, 0, 16]}, {1: [0, 4], 3: [0]},
-    {1: [0, 4], 2: [0, 0, 0, 16]}, {1: [1]}, {1: [0, -1]},
-    {1: [0, 4, 8, 16], 2: [0, 0, 0, 0]},
-])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {},
+        {2: [0, 0, 0, 16]},
+        {1: [0, 4], 3: [0]},
+        {1: [0, 4], 2: [0, 0, 0, 16]},
+        {1: [1]},
+        {1: [0, -1]},
+        {1: [0, 4, 8, 16], 2: [0, 0, 0, 0]},
+    ],
+)
 def test_invalid_irreducible_tables(raw):
     with pytest.raises(ValueError):
         irreducible_slab_counts(raw)
@@ -248,19 +328,16 @@ def test_cyclic_core_retains_singleton_loops():
 
 
 def test_overflow_free_vector_certificate():
-    vectors = [np.array([1, 10**12, 10**12 - 17], dtype=np.uint64),
-               np.array([2**64 - 1, 2**63, 11], dtype=np.uint64)]
+    vectors = [np.array([1, 10**12, 10**12 - 17], dtype=np.uint64), np.array([2**64 - 1, 2**63, 11], dtype=np.uint64)]
     for vector in vectors:
         for q in (Fraction(3685468366, 10**9), Fraction(7, 11), Fraction(1, 10**20)):
-            image = np.array([min(2**64 - 1, q.numerator * int(v) // q.denominator)
-                              for v in vector], dtype=np.uint64)
+            image = np.array([min(2**64 - 1, q.numerator * int(v) // q.denominator) for v in vector], dtype=np.uint64)
             assert verify_vector_bound(image, vector, q)
             for i in range(len(image)):
                 if int(image[i]) < 2**64 - 1:
                     bad = image.copy()
                     bad[i] += np.uint64(1)
-                    expected = all(q.denominator * int(a) <= q.numerator * int(v)
-                                   for a, v in zip(bad, vector))
+                    expected = all(q.denominator * int(a) <= q.numerator * int(v) for a, v in zip(bad, vector))
                     assert verify_vector_bound(bad, vector, q) == expected
     with pytest.raises(ValueError):
         verify_vector_bound(np.array([1]), np.array([0]), Fraction(4))
@@ -283,4 +360,4 @@ def test_published_full_graph_certificate():
     assert result["states"] == 172226 and result["edges"] == 633138
     assert result["vector_min"] == 1
     assert result["vector_sum"] == 136209763558000711
-    assert result["pointwise_factor"] / result["bound"]**10 < 294632981756
+    assert result["pointwise_factor"] / result["bound"] ** 10 < 294632981756

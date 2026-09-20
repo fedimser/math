@@ -429,9 +429,7 @@ def _bound_integer(value: int, name: str, minimum: int = 0) -> int:
     return value
 
 
-_SLAB_DIRECTIONS = np.array(
-    [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)], dtype=np.int64
-)
+_SLAB_DIRECTIONS = np.array([(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)], dtype=np.int64)
 _SLAB_CORNERS = np.zeros((6, 6), dtype=np.uint8)
 _SLAB_COMPLEMENTS = np.zeros(37, dtype=np.uint8)
 for _incoming in range(6):
@@ -474,8 +472,15 @@ def _slab_search(width, limit, x, y, z, incoming, length, occupancy, counts):
         else:
             continue
         _slab_search(
-            width, limit, nx, y + _SLAB_DIRECTIONS[outgoing, 1],
-            z + _SLAB_DIRECTIONS[outgoing, 2], outgoing, length + 1, occupancy, counts
+            width,
+            limit,
+            nx,
+            y + _SLAB_DIRECTIONS[outgoing, 1],
+            z + _SLAB_DIRECTIONS[outgoing, 2],
+            outgoing,
+            length + 1,
+            occupancy,
+            counts,
         )
         occupancy[position] = previous
 
@@ -520,7 +525,7 @@ def irreducible_slab_counts(raw: Mapping[int, Sequence[int]]) -> list[int]:
     if not all(sizes) or sizes != sorted(sizes, reverse=True):
         raise ValueError("raw row lengths must be positive and nonincreasing in progress")
     for d, row in rows.items():
-        if any(row[:min(2 * d - 1, len(row))]):
+        if any(row[: min(2 * d - 1, len(row))]):
             raise ValueError("a block of progress d requires at least 2*d-1 internal edges")
     irreducibles: dict[int, list[int]] = {}
     total = [0] * sizes[0]
@@ -529,10 +534,7 @@ def irreducible_slab_counts(raw: Mapping[int, Sequence[int]]) -> list[int]:
         for length in range(len(row)):
             for left_d in range(1, d):
                 for left_length in range(length):
-                    row[length] -= (
-                        irreducibles[left_d][left_length]
-                        * rows[d - left_d][length - left_length - 1]
-                    )
+                    row[length] -= irreducibles[left_d][left_length] * rows[d - left_d][length - left_length - 1]
             if row[length] < 0:
                 raise ValueError("raw tables give a negative irreducible coefficient")
             total[length] += row[length]
@@ -664,9 +666,9 @@ def verify_vector_bound(image: np.ndarray, vector: np.ndarray, bound: Fraction) 
     whole, remainder = divmod(p, d)
     if d <= limit and p * maximum // d <= limit and remainder * (d - 1) <= limit:
         for start in range(0, len(vector), 1_000_000):
-            v = vector[start:start + 1_000_000]
+            v = vector[start : start + 1_000_000]
             ceiling = whole * v + remainder * (v // d) + (remainder * (v % d)) // d
-            if np.any(image[start:start + len(v)] > ceiling):
+            if np.any(image[start : start + len(v)] > ceiling):
                 return False
         return True
     return all(d * int(a) <= p * int(v) for a, v in zip(image, vector))
@@ -682,8 +684,7 @@ def _exact_window_image(source, target, vector, size):
 
 
 def window_upper_bound(
-    m: int, iterations: int = 500, scale: int = 10**12,
-    denominator: int = 10**9, full_graph: bool = False
+    m: int, iterations: int = 500, scale: int = 10**12, denominator: int = 10**9, full_graph: bool = False
 ) -> dict:
     """Return a rigorous Fraction upper bound and certificate statistics.
 
@@ -728,9 +729,14 @@ def window_upper_bound(
     vector_sum = sum(map(int, vector))
     vector_min = int(vector.min())
     return {
-        "bound": bound, "states": size, "edges": len(source),
-        "full_states": full_states, "full_edges": full_edges,
-        "vector_min": vector_min, "vector_sum": vector_sum,
-        "iterations": iterations, "full_graph": full_graph,
+        "bound": bound,
+        "states": size,
+        "edges": len(source),
+        "full_states": full_states,
+        "full_edges": full_edges,
+        "vector_min": vector_min,
+        "vector_sum": vector_sum,
+        "iterations": iterations,
+        "full_graph": full_graph,
         "pointwise_factor": Fraction(vector_sum, vector_min) if full_graph else None,
     }
