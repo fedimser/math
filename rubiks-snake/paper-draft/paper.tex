@@ -30,13 +30,13 @@ $3.400034903<\mu\leq3.667542939$.
 The lower bound comes from uniquely decomposable paths confined to
 successive disjoint slabs; the upper bound comes from a finite graph
 enforcing all collision constraints within a prescribed window.
-Finite enumerations are converted into exact integer certificates,
-rather than estimates of eigenvalues or polynomial roots. The same
-constructions give the pointwise bounds
+Exact integer tests certify the bounds obtained from these finite
+enumerations. The same constructions give the pointwise bounds
 $0.014(3.4000)^n<S_n$ for $n\geq4$ and
 $S_n<2.95\cdot10^{11}(3.6855)^n$ for $n\geq10$.
-Reproducible notebooks implement each bound with adjustable truncation
-parameters. No constant-prefactor asymptotic or ratio limit is assumed.
+The accompanying notebooks compute each bound with adjustable
+truncation parameters. The arguments do not assume a
+constant-prefactor asymptotic or a ratio limit.
 \end{abstract}
 
 \section{Introduction}
@@ -46,7 +46,7 @@ prisms, called \emph{wedges}. Two square faces of each internal wedge
 are joined to its neighbors. Rotating these joints changes the shape
 of the chain. We consider only multiples of a quarter turn and forbid
 intersections of positive volume. Boundary contact is allowed.
-The familiar toy has 24 wedges, but this counting problem is defined
+The familiar toy has 24 wedges. We consider the counting problem
 for every positive length.
 
 We distinguish the two ends of the chain and count configurations up
@@ -57,17 +57,17 @@ $n=28$ in OEIS A375865~\cite{oeisA375865}. Its value
 $S_{24}=13\,446\,591\,920\,995$ agrees with Aylett's corrected
 enumeration~\cite{aylett2011}.
 
-Rotation-sequence descriptions and geometric design methods have
-been developed by Li, Hou, and Bishop~\cite{li2020}; related work
-addresses palindromic and periodic snakes~\cite{palindromic2021},
+Li, Hou, and Bishop~\cite{li2020} develop rotation-sequence
+descriptions and geometric design methods. Other work treats
+palindromic and periodic snakes~\cite{palindromic2021},
 geometric structures~\cite{chen2023}, and planar
-configurations~\cite{grotto2024}. Our subject is instead the
-exponential growth of the unrestricted three-dimensional count.
+configurations~\cite{grotto2024}. We study the exponential
+growth of the unrestricted three-dimensional count.
 
-The model resembles a self-avoiding lattice walk, but differs in
-two essential ways: the direction must turn through a right angle
+The model differs from an ordinary self-avoiding lattice walk in
+two respects: the direction must turn through a right angle
 at every cube, and two complementary wedges may occupy the same
-cube. We retain both features throughout. Submultiplicativity,
+cube. Submultiplicativity,
 as in the theory of connective constants~\cite{hammersley1957},
 proves existence of a single exponential growth constant.
 For upper bounds we adapt finite-memory and overlapping-path
@@ -75,10 +75,9 @@ methods~\cite{alm1993,noonan1998,ponitz2000,he2025}.
 For lower bounds we construct a family of concatenable slab paths
 and remove the ambiguity in their decomposition.
 
-The structural arguments below are independent of computation.
-The reported numerical bounds require only finite, exhaustive
-enumerations followed by exact inequalities. Section~\ref{sec:reproduce}
-identifies a separate notebook for each computation.
+The proofs below reduce the numerical bounds to finite exhaustive
+enumerations and exact inequalities. Section~\ref{sec:reproduce}
+lists a notebook for each computation.
 
 \section{Definitions and geometry}\label{sec:geometry}
 
@@ -102,8 +101,8 @@ $r_1\cdots r_{n-1}$ over $\{0,1,2,3\}$.
 The symbol records a relative rotation by that many quarter turns,
 with zero denoting the untwisted, zigzag configuration. This is the
 usual four-symbol notation~\cite{soul2022,li2020}.
-For completeness the following coordinate convention specifies it
-without a physical toy. Put $p_0=0$, $d_0=e_y$, $d_1=e_x$, and
+The notation can be defined directly in coordinates.
+Put $p_0=0$, $d_0=e_y$, $d_1=e_x$, and
 \begin{equation}\label{eq:directions}
  d_{i+1}=R_{d_i}(r_i\pi/2)d_{i-1},\qquad
  p_i=p_{i-1}+d_i\quad(1\leq i<n),
@@ -115,10 +114,10 @@ the free faces at the two ends, not extra wedges.
 
 Thus the first displacement is fixed, consecutive displacements
 are perpendicular, and each of the four possible next directions
-corresponds to exactly one rotation symbol. The final symbol still
-matters: it determines the last wedge's orientation even though
-it does not change any cube center. A center-line walk alone is
-therefore not a complete formula.
+corresponds to exactly one rotation symbol. The final symbol
+determines the last wedge's orientation without changing any
+cube center. A center-line walk therefore does not specify
+a complete formula.
 
 A formula is \emph{valid} if the interiors of all its wedges are
 pairwise disjoint. We define $S_n$ to be the number of valid formulas.
@@ -176,24 +175,24 @@ the new wedge fails the collision rule. Recording the number of
 successful prefixes gives all counts through the chosen length.
 The implementation stores the occupancy type of each visited cube
 and precomputes the 24 ordered wedge orientations and their
-rotation transitions. No floating-point geometry is needed. The 
+rotation transitions. No floating-point geometry is needed. The
 notebook \texttt{count-shapes.ipynb} describes this enumeration.
 
-The first 24 terms ($S_1 \dots S_{24}$) are: 
+The first 24 terms ($S_1 \dots S_{24}$) are:
 $1$, $4$, $16$, $64$, $241$, $920$, $3\,384$, $12\,585$,
 $46\,471$, $172\,226$, $633\,138$, $2\,333\,757$, $8\,561\,679$,
 $31\,462\,176$, $115\,247\,629$, $422\,677\,188$,
 $1\,546\,186\,675$, $5\,661\,378\,449$, $20\,689\,242\,550$,
 $75\,663\,420\,126$, $276\,279\,455\,583$, $1\,009\,416\,896\,015$,
-$3\,683\,274\,847\,187$, $13\,446\,591\,920\,995$. 
-The sequence is also available at \cite{oeisA375865}, currently computed up to
+$3\,683\,274\,847\,187$, $13\,446\,591\,920\,995$.
+The sequence is recorded in OEIS~\cite{oeisA375865} through
 $n=28$.
 
-Plot of $S_n$ in semi-log scale is visually indistingusihable from 
-a line. It's more interesting to plot $r_n=S_{n+1}/S_n$, which is shown in
-Fig.~\ref{fig:rn}. This plot suggests that $S_n \sim C \cdot \mu^n$ where
-$\mu \approx 3.64$. The rest of the paper is devoted to fomalizing this 
-hypothesis.
+A semilog plot of $S_n$ is visually indistinguishable from a
+straight line. The consecutive ratios $r_n=S_{n+1}/S_n$ give
+a more informative plot, shown in Fig.~\ref{fig:rn}.
+They suggest that $S_n \sim C \cdot \mu^n$ with
+$\mu \approx 3.64$. We investigate this hypothesis below.
 
 \begin{figure}[t]
 \centering
@@ -307,9 +306,8 @@ $+e_y,+e_x,+e_y$ form a slab block: its four cube centers
 have $x$-coordinates $0,0,1,1$, and both the entry and exit
 steps are $+e_x$.
 
-The purpose of these boundary conditions is to allow safe
-concatenation. Translate the next block so that its first cube
-is the cube reached by the preceding block's exit step.
+To concatenate blocks, translate each new block so that its
+first cube is the cube reached by the preceding block's exit step.
 That step is also the next block's entry step. Successive
 blocks then occupy disjoint sets of cube layers, so wedges
 from different blocks cannot overlap in positive volume.
@@ -326,11 +324,12 @@ In particular $B_{d,j}=0$ for $j<2d$: every one of the at
 least $d-1$ internal forward steps must be separated from the
 next, and from each boundary edge, by a transverse step.
 
-These numbers are computed by a depth-first search with incoming
-direction $+e_x$. Before advancing, the chosen outgoing direction
-finalizes the current wedge, whose occupancy is checked and then
-restored on backtracking. At every endpoint in $x=w$ with a
-transverse incoming direction, the search tries the prescribed
+We compute these numbers by a depth-first search with incoming
+direction $+e_x$. Before advancing, the search uses the chosen
+outgoing direction to determine the current wedge and check its
+occupancy. It restores the previous occupancy when backtracking.
+At every endpoint in $x=w$ with a transverse incoming direction,
+the search tries the prescribed
 exit $+e_x$ and records the block if the final wedge is legal.
 Continuing the search computes all lengths through the cutoff
 in one traversal. Transverse coordinates have absolute value
@@ -374,8 +373,8 @@ the exact recurrence
  I_{a,b}B_{d-a,j-b}.
 \end{equation}
 
-The bivariate bookkeeping is important also when truncating the
-enumeration. If tables are supplied for $1\leq d\leq D$ through
+We also keep track of both sizes when truncating the enumeration.
+If tables are supplied for $1\leq d\leq D$ through
 internal lengths $K_d$, with
 $K_1\geq K_2\geq\cdots\geq K_D$, then every coefficient needed
 to compute $I_{d,j}$ for $j\leq K_d+1$ is available.
@@ -391,8 +390,8 @@ length. Put
  c_0=1,\quad c_k=0\ (k<0),\qquad
  c_k=\sum_{j=1}^L i_jc_{k-j}\quad(k\geq1).
 \end{equation}
-Unique factorization makes $c_k$ the exact number of
-concatenations of length $k$, not just a formal weighted count.
+By unique factorization, $c_k$ counts the concatenations of
+length $k$ exactly.
 
 Prepend the fixed first wedge and its $+e_x$ edge to such a
 concatenation. Its final outgoing edge reaches a new cube,
@@ -404,8 +403,8 @@ uniquely from this direction sequence. Therefore
 \begin{equation}\label{eq:lower-pointwise}
  c_{n-2}\leq S_n\qquad(n\geq2).
 \end{equation}
-This also accounts for the terminal-wedge orientation, which
-must not be dropped when passing between paths and formulas.
+The fixed last rotation supplies the terminal-wedge orientation
+needed to encode the path as a formula.
 
 \begin{theorem}\label{thm:renewal}
 For any nonempty finite family of irreducible blocks, let
@@ -435,17 +434,17 @@ $\sum_j i_j(p/d)^{-j}>1$, so $p/d<\alpha$.
 For width zero, the blocks are nonempty transverse runs in
 a single $yz$-plane. Their axes alternate between $y$ and $z$,
 but complementary revisits are allowed. Such a block has no
-internal separator, so it is already irreducible. The first
+internal separator, so it is irreducible. The first
 counts, by internal length $\ell=1,2,\ldots$, are
 $4,8,16,24,40,72,136,224,\ldots$.
 Using lengths through 28 gives $\mu>3.144384190$.
-This realizes a plane-by-plane lower-bound strategy related
+This plane-by-plane lower bound is related
 to Aylett's geometric construction~\cite{aylett2011}.
 
 For the stronger bound we enumerate progress $d=1,2,3$ through
 internal lengths $28,20,18$, respectively, and apply
 \eqref{eq:irreducible}. The resulting polynomial has $L=29$.
-For orientation, the retained counts
+The retained counts
 $i_2,\ldots,i_9$ are
 $4,8,16,24,40,72,272,1200$.
 Exact evaluation of \eqref{eq:lower-certificate} is negative at
@@ -487,10 +486,10 @@ fixed factors, and Jordan normal form bounds its growth by
 a polynomial times $\rho(A)^t$. Taking roots gives the claim.
 \end{proof}
 
-The graph enforces only bounded-window constraints. Its paths
-may have collisions between wedges farther apart than the
-window length, which is precisely why this construction gives
-an upper, rather than an exact, count.
+The graph checks only collisions visible within a window.
+Words with collisions between wedges farther apart along the
+chain can still follow graph paths, so the path count is an
+upper bound on the number of valid words.
 
 \subsubsection{Exact spectral certificates}
 For any nonnegative matrix $A$ and positive vector $v$,
@@ -518,9 +517,9 @@ On each retained component, iteration with $A+I$ and separate
 normalization supplies a candidate vector. Adding $I$
 removes periodic oscillation without changing the eigenvectors;
 separate normalization prevents smaller components from
-vanishing numerically. The final integer test
-\eqref{eq:collatz}, not convergence of this iteration,
-certifies the bound.
+vanishing numerically. The integer test \eqref{eq:collatz}
+certifies the bound independently of whether the iteration
+has converged.
 
 \begin{table}[t]
 \caption{Finite-window certificates. States and edges refer to
@@ -549,7 +548,7 @@ computer-assisted interval
 
 \subsection{Pointwise lower bounds}\label{sec:point-lower}
 
-The renewal sequence \eqref{eq:renewal} already gives an exact
+The renewal sequence \eqref{eq:renewal} gives an exact
 integer lower bound at each length. A pure exponential follows
 from a finite induction check.
 
@@ -566,8 +565,8 @@ $c_k\geq aq^k\sum_j i_jq^{-j}\geq aq^k$.
 
 For the irreducible table above, take $L=29$, $k_0=2$,
 $q=\qminus$, and $a=41/250$.
-The root certificate supplies the required strict inequality
-for the sum. The remaining 29 checks are the integer inequalities
+The root certificate gives the strict inequality for the sum.
+The remaining 29 checks are the integer inequalities
 \[
  250c_k(10^9)^k\geq41(3400034903)^k,\qquad 2\leq k\leq30.
 \]
@@ -623,12 +622,12 @@ $S_n<2.95\cdot10^{11}(3.6855)^n$ for $n\geq10$.
 For short lengths the elementary upper bound $4^{n-1}$
 is usually much smaller, and may always be used instead.
 
-It is important not to insert the smaller base $\qplus$
-into \eqref{eq:closed-upper} with this prefactor.
-The componentwise $m=13$ certificate controls exponential
-growth, but omits edges between components; such transitions
-can contribute polynomial factors to path counts.
-It is not a full-graph pointwise certificate.
+The smaller base $\qplus$ cannot be substituted into
+\eqref{eq:closed-upper} with this prefactor.
+The componentwise $m=13$ certificate bounds the exponential
+growth rate using only edges within components. Edges between
+components can contribute polynomial factors to path counts,
+so this certificate does not give a full-graph pointwise bound.
 
 \section{Computational reproducibility}\label{sec:reproduce}
 
@@ -657,46 +656,44 @@ research files. Tests in \texttt{rubiks\_snake\_test.py}
 include short-length comparisons of the block geometry
 with rotation-word enumeration.
 
-Each notebook exposes a bound function and evaluates successively
-larger parameter choices. Increasing the slab cutoffs retains
+Each notebook defines a bound function and runs it with
+increasing parameters. Increasing the slab cutoffs retains
 more nonnegative irreducible coefficients; increasing the window
-size enforces more local constraints. These changes strengthen
-the mathematical approximations, although a finite-iteration
-upper certificate may require more iterations or a finer
-integer-vector scale to realize the improvement.
-All substantive computations are timed. The archived largest
-window run, $m=13$, used approximately 195 seconds and 6.5 GiB
-of memory; these are historical resource measurements, not
-requirements guaranteed on another machine.
+size enforces more local constraints. These changes tighten
+the mathematical approximations. Obtaining a better upper
+certificate may also require more iterations or a finer
+integer-vector scale.
+The notebooks time all substantive computations. The archived largest
+window run, $m=13$, took approximately 195 seconds and 6.5 GiB
+of memory; runtime and peak memory may differ on other machines.
 
-The notebooks distinguish retained numerical outputs from newly
-executed cells. Rerunning recomputes the relevant finite tables
-and certificates, rather than treating stored output as input.
-The reported decimals are rational bounds, not fitted values:
-lower endpoints are accepted by an integer polynomial sign test,
-and upper endpoints by an integer componentwise comparison.
-Counter overflow is checked, and certificate products are
-evaluated without fixed-width overflow. Floating-point iteration
-is only a search procedure for a certificate; its error is not
-part of the proof once the exact test passes.
+The notebooks record which outputs were retained and which
+cells were rerun. Rerunning recomputes the finite tables and
+certificates without reading the saved outputs.
+The reported decimal bounds have exact rational certificates:
+an integer polynomial sign test for each lower endpoint and
+an integer componentwise comparison for each upper endpoint.
+The code checks counters for overflow and evaluates certificate
+products without fixed-width overflow. Floating-point iteration
+supplies a candidate vector; once the exact check passes, the
+proof does not depend on the accuracy of that iteration.
 
 \section{Conclusion}
 
 The number of valid Rubik's Snake formulas has a well-defined
-exponential growth constant. Exact finite computations, joined
-to geometric concatenation and finite-window arguments, locate
+exponential growth constant. Slab concatenation and finite-window
+graphs, combined with exact finite enumeration, locate
 it in $(3.400034903,3.667542939]$ and give explicit pointwise
-exponential bounds. Complementary double occupancy and unique
-slab factorization are essential: ignoring the former weakens
-the lower family, while ignoring the latter can produce an
-invalid lower bound.
+exponential bounds. Allowing complementary double occupancy
+strengthens the lower bound. Unique slab factorization prevents
+overcounting, which could invalidate the lower bound.
 
 Longer slab tables and larger window graphs can improve the
 interval without changing the proofs. More efficient recognition
 of forbidden local patterns may reduce the upper computation's
-memory cost. A ratio limit, an algebraic correction factor,
-or an equivalence $S_n\sim C\mu^n$ would require additional
-arguments and is not established here.
+memory cost. We do not establish a ratio limit, an algebraic
+correction factor, or an equivalence $S_n\sim C\mu^n$;
+these would require further arguments.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
