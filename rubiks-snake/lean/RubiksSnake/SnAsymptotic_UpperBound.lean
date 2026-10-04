@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptitc_MuUpperBound
+import RubiksSnake.SnAsymptotitc_MuUpperBound
 
 /-!
 # An explicit pointwise upper bound

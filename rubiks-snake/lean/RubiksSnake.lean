@@ -7,7 +7,8 @@ import RubiksSnake.ReflectionTransform
 import RubiksSnake.ReversalTransform
 import RubiksSnake.RotationRestricted
 import RubiksSnake.SmallCounts
+import RubiksSnake.SnAsymptotic_LowerBound
 import RubiksSnake.SnAsymptotic_MuExistence
-import RubiksSnake.SnAsymptotic_MuUpperBound
+import RubiksSnake.SnAsymptotitc_MuUpperBound
 import RubiksSnake.SnAsymptotic_UpperBound
 import RubiksSnake.SnAsymptoticEasy

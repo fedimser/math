@@ -50,6 +50,11 @@ theorem snakeGrowthConstant_le_of_exact_count
   apply snakeGrowthConstant_le_of_countValidFormulas_le_pow k hk q hq
   simpa [hexact] using hpower
 
+end
+
+def boundHelper (n Sn : Nat) : Float :=
+  Float.pow Sn.toFloat (1.0 / (n.toFloat - 1.0))
+#eval boundHelper 7 3384
 
 /-- The Rubik's Snake growth constant is at most `3.9`. -/
 theorem snakeGrowthConstant_le_39_div_10 :
