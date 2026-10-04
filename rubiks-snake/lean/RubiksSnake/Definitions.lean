@@ -2,6 +2,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Data.Fin.Tuple.Reflection
 import Mathlib.Data.List.Infix
+import Mathlib.Data.PNat.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.SetTheory.Cardinal.NatCard
 import Lean.Elab.Tactic.Omega
@@ -82,13 +83,9 @@ instance (rs : List Rotation) : Decidable (collisionFree rs) := by
   unfold collisionFree interiorDisjoint sameUnorderedPair
   infer_instance
 
-def subwords (rs : List Rotation) : List (List Rotation) :=
-  rs.tails.flatMap List.inits
-
-/-- A word is valid when every contiguous subword gives a collision-free subchain.
-This directly incorporates the rigid normalization used after taking a subchain. -/
+/-- A word is valid when the interiors of its wedges are pairwise disjoint. -/
 def ValidList (rs : List Rotation) : Prop :=
-  (subwords rs).all (fun middle => decide (collisionFree middle)) = true
+  collisionFree rs
 
 instance (rs : List Rotation) : Decidable (ValidList rs) := by
   unfold ValidList
@@ -109,8 +106,8 @@ def wordCount (k : ℕ) : ℕ :=
   max 1 (countWords k Valid)
 
 /-- `S n` is the number of valid formulas for an `n`-wedge snake. -/
-def S (n : ℕ) : ℕ :=
-  wordCount (n - 1)
+def S (n : ℕ+) : ℕ :=
+  wordCount ((n : ℕ) - 1)
 
 def wordPrefix {p q : ℕ} (w : Word (p + q)) : Word p :=
   fun i => w (Fin.castAdd q i)
@@ -127,32 +124,32 @@ def reflectRotation (r : Rotation) : Rotation :=
 def reflectWord {n : ℕ} (w : Word n) : Word n :=
   fun i => reflectRotation (w i)
 
-def fixedShapeCount (t : ∀ {n}, Word n → Word n) (n : ℕ) : ℕ :=
-  countWords (n - 1) fun w => Valid w ∧ t w = w
+def fixedShapeCount (t : ∀ {n}, Word n → Word n) (n : ℕ+) : ℕ :=
+  countWords ((n : ℕ) - 1) fun w => Valid w ∧ t w = w
 
 /-- Shapes fixed by head-tail reversal. -/
-def F (n : ℕ) : ℕ :=
+def F (n : ℕ+) : ℕ :=
   fixedShapeCount (@reverseWord) n
 
 /-- Shapes up to reversal, as given by Burnside's lemma. -/
-def D (n : ℕ) : ℕ :=
+def D (n : ℕ+) : ℕ :=
   (S n + F n) / 2
 
-def reflectionFixed (n : ℕ) : ℕ :=
+def reflectionFixed (n : ℕ+) : ℕ :=
   fixedShapeCount (@reflectWord) n
 
-def reversalReflectionFixed (n : ℕ) : ℕ :=
+def reversalReflectionFixed (n : ℕ+) : ℕ :=
   fixedShapeCount (fun w => reverseWord (reflectWord w)) n
 
-def shapesUpToReflection (n : ℕ) : ℕ :=
+def shapesUpToReflection (n : ℕ+) : ℕ :=
   (S n + reflectionFixed n) / 2
 
-def shapesUpToReversalAndReflection (n : ℕ) : ℕ :=
+def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
   (S n + F n + reflectionFixed n + reversalReflectionFixed n) / 4
 
 /-- Shapes using only rotation symbols from `allowed`. -/
-def SR (allowed : Finset Rotation) (n : ℕ) : ℕ :=
-  countWords (n - 1) fun w => Valid w ∧ ∀ i, w i ∈ allowed
+def SR (allowed : Finset Rotation) (n : ℕ+) : ℕ :=
+  countWords ((n : ℕ) - 1) fun w => Valid w ∧ ∀ i, w i ∈ allowed
 
 def rotateWord {n : ℕ} (k : ℕ) (w : Word n) : Word n :=
   fun i => w ⟨(i.1 + k) % n, Nat.mod_lt _ (Nat.zero_lt_of_lt i.2)⟩
@@ -163,38 +160,36 @@ def cyclicValid {n : ℕ} (w : Word n) : Prop :=
     (centersFromDirections ds).getLastD zeroVec = zeroVec ∧
     ds.getLastD zeroVec = ex
 
-def cyclicFixedCount (n k : ℕ) : ℕ :=
+def cyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
   countWords n fun w => cyclicValid w ∧ rotateWord k w = w
 
-def reflectionCyclicFixedCount (n k : ℕ) : ℕ :=
+def reflectionCyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
   countWords n fun w =>
     cyclicValid w ∧ rotateWord k (reverseWord w) = w
 
 /-- Formulas describing loops, with the closing joint included in the encoding. -/
-def L1 (n : ℕ) : ℕ :=
+def L1 (n : ℕ+) : ℕ :=
   countWords n cyclicValid
 
 /-- Loops up to reversal. -/
-def L2 (n : ℕ) : ℕ :=
+def L2 (n : ℕ+) : ℕ :=
   (L1 n + reflectionCyclicFixedCount n 0) / 2
 
 /-- Loops up to cyclic shifts. -/
-def L3 (n : ℕ) : ℕ :=
-  if n = 0 then 0 else (∑ k ∈ Finset.range n, cyclicFixedCount n k) / n
+def L3 (n : ℕ+) : ℕ :=
+  (∑ k ∈ Finset.range n, cyclicFixedCount n k) / n
 
 /-- Loops up to cyclic shifts and reversal. -/
-def L4 (n : ℕ) : ℕ :=
-  if n = 0 then 0
-  else
-    ((∑ k ∈ Finset.range n, cyclicFixedCount n k) +
-      ∑ k ∈ Finset.range n, reflectionCyclicFixedCount n k) / (2 * n)
+def L4 (n : ℕ+) : ℕ :=
+  ((∑ k ∈ Finset.range n, cyclicFixedCount n k) +
+    ∑ k ∈ Finset.range n, reflectionCyclicFixedCount n k) / (2 * n)
 
 /-- The Burnside auxiliary `X(n,k)`: words whose `k`-fold repetition is a loop. -/
-def X (n k : ℕ) : ℕ :=
+def X (n k : ℕ+) : ℕ :=
   countWords n fun w => cyclicValid (Fin.repeat k w)
 
 /-- The reflection term in the dihedral Burnside sum. -/
-def XR (n k : ℕ) : ℕ :=
+def XR (n : ℕ+) (k : ℕ) : ℕ :=
   reflectionCyclicFixedCount n k
 
 def positiveAxis (v : Vec3) : Prop :=
@@ -216,26 +211,25 @@ def GoodStep (rs : List Rotation) : Prop :=
       coordinatewiseLe p lastCenter ∧ ∃ i, 0 < p i
 
 /-- The concatenable-step count `a_l` from the original asymptotic notebook. -/
-def a (l : ℕ) : ℕ :=
+def a (l : ℕ+) : ℕ :=
   countWords l fun w => GoodStep (List.ofFn w)
 
 /-- The empirical consecutive-ratio sequence `r_n = S_(n+1) / S_n`. -/
-noncomputable def r (n : ℕ) : ℝ :=
+noncomputable def r (n : ℕ+) : ℝ :=
   (S (n + 1) : ℝ) / (S n : ℝ)
 
 def inSlab (width : ℕ) (p : Vec3) : Prop :=
   0 ≤ p 0 ∧ p 0 ≤ width
 
-def SlabBlock (d j : ℕ) (w : Word j) : Prop :=
-  0 < d ∧
-    let ds := directionsFrom ex ey (List.ofFn w)
-    collisionFree (List.ofFn w) ∧
-      (centersFromDirections ds).getLastD zeroVec 0 = d - 1 ∧
-      ds.getLastD zeroVec = ex ∧
-      ∀ p ∈ centersFromDirections ds, inSlab (d - 1) p
+def SlabBlock (d j : ℕ+) (w : Word j) : Prop :=
+  let ds := directionsFrom ex ey (List.ofFn w)
+  collisionFree (List.ofFn w) ∧
+    (centersFromDirections ds).getLastD zeroVec 0 = (d : ℕ) - 1 ∧
+    ds.getLastD zeroVec = ex ∧
+    ∀ p ∈ centersFromDirections ds, inSlab ((d : ℕ) - 1) p
 
 /-- `B d j` counts slab blocks of progress `d` and total encoded length `j`. -/
-def B (d j : ℕ) : ℕ :=
+def B (d j : ℕ+) : ℕ :=
   countWords j (SlabBlock d j)
 
 def IsSeparator (w : List Rotation) (h : ℕ) : Prop :=
@@ -244,42 +238,43 @@ def IsSeparator (w : List Rotation) (h : ℕ) : Prop :=
     (∀ i, i ≤ h → ∀ hi : i < cs.length, (cs.get ⟨i, hi⟩) 0 ≤ h) ∧
     (∀ i, h < i → ∀ hi : i < cs.length, h + 1 ≤ (cs.get ⟨i, hi⟩) 0)
 
-def IrreducibleSlabBlock (d j : ℕ) (w : Word j) : Prop :=
-  SlabBlock d j w ∧ ∀ h < d - 1, ¬IsSeparator (List.ofFn w) h
+def IrreducibleSlabBlock (d j : ℕ+) (w : Word j) : Prop :=
+  SlabBlock d j w ∧ ∀ h < (d : ℕ) - 1, ¬IsSeparator (List.ofFn w) h
 
 /-- `I d j` counts irreducible slab blocks. -/
-def I (d j : ℕ) : ℕ :=
+def I (d j : ℕ+) : ℕ :=
   countWords j (IrreducibleSlabBlock d j)
 
 /-- `i_j` is the irreducible count summed over all possible progresses. -/
-def irreducibleLengthCount (j : ℕ) : ℕ :=
-  ∑ d ∈ Finset.range (j + 1), I d j
+def irreducibleLengthCount (j : ℕ+) : ℕ :=
+  ∑ d ∈ Finset.range j, I ⟨d + 1, by omega⟩ j
 
 /-- Renewal counts for uniquely decomposable concatenations of irreducible blocks. -/
 def c : ℕ → ℕ
   | 0 => 1
   | k + 1 =>
       ∑ j ∈ Finset.range (k + 1),
-        irreducibleLengthCount (j + 1) * c (k - j)
+        irreducibleLengthCount ⟨j + 1, by omega⟩ * c (k - j)
 termination_by k => k
 decreasing_by omega
 
-def validWindow (m : ℕ) := {w : Word m // Valid w}
+def validWindow (m : ℕ+) := {w : Word m // Valid w}
 
 /-- The finite-window adjacency matrix from the paper. -/
-def A (m : ℕ) (v u : validWindow m) : ℕ :=
+def A (m : ℕ+) (v u : validWindow m) : ℕ :=
   Nat.card {r : Rotation //
-    ∃ w : Word (m + 1), Valid w ∧
-      (fun i : Fin m => w ⟨i.1, by omega⟩) = u.1 ∧
-      (fun i : Fin m => w ⟨i.1 + 1, by omega⟩) = v.1}
+    ∃ w : Word ((m : ℕ) + 1), Valid w ∧
+      (fun i : Fin (m : ℕ) => w ⟨i.1, by omega⟩) = u.1 ∧
+      (fun i : Fin (m : ℕ) => w ⟨i.1 + 1, by omega⟩) = v.1}
 
 /-- Words accepted by every length-`m` sliding window. -/
-def windowWord {m n : ℕ} (w : Word n) (start : ℕ) (h : start + m ≤ n) : Word m :=
+def windowWord {m : ℕ+} {n : ℕ} (w : Word n) (start : ℕ)
+    (h : start + (m : ℕ) ≤ n) : Word m :=
   fun i => w ⟨start + i.1, by omega⟩
 
-def windowPathCount (m n : ℕ) : ℕ :=
+def windowPathCount (m : ℕ+) (n : ℕ) : ℕ :=
   countWords n fun w =>
-    ∀ start, ∀ h : start + m ≤ n, Valid (windowWord w start h)
+    ∀ start, ∀ h : start + (m : ℕ) ≤ n, Valid (windowWord w start h)
 
 
 
