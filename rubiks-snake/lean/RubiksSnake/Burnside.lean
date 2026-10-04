@@ -222,49 +222,6 @@ def shapesUpToReflection (n : ℕ+) : ℕ :=
 def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
   (S n + S_FIX_REV n + reflectionFixed n + reversalReflectionFixed n) / 4
 
-def rotateFormula {n : ℕ} (k : ℕ) (w : Formula n) : Formula n :=
-  fun i => w ⟨(i.1 + k) % n, Nat.mod_lt _ (Nat.zero_lt_of_lt i.2)⟩
-
-def cyclicValid {n : ℕ} (w : Formula n) : Prop :=
-  let ds := directions (List.ofFn w)
-  collisionFree (List.ofFn w) ∧
-    (centersFromDirections ds).getLastD zeroVec = zeroVec ∧
-    ds.getLastD zeroVec = ex
-
-def cyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
-  countFormulas n fun w => cyclicValid w ∧ rotateFormula k w = w
-
-def reflectionCyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
-  countFormulas n fun w =>
-    cyclicValid w ∧ rotateFormula k (reverseFormula w) = w
-
-/-- Formulas describing loops, with the closing joint included in the encoding. -/
-def L1 (n : ℕ+) : ℕ :=
-  countFormulas n cyclicValid
-
-/-- Loops up to reversal. -/
-def L2 (n : ℕ+) : ℕ :=
-  (L1 n + reflectionCyclicFixedCount n 0) / 2
-
-/-- Loops up to cyclic shifts. -/
-def L3 (n : ℕ+) : ℕ :=
-  (∑ k ∈ Finset.range n, cyclicFixedCount n k) / n
-
-/-- Loops up to cyclic shifts and reversal. -/
-def L4 (n : ℕ+) : ℕ :=
-  ((∑ k ∈ Finset.range n, cyclicFixedCount n k) +
-    ∑ k ∈ Finset.range n, reflectionCyclicFixedCount n k) / (2 * n)
-
-/-- The Burnside auxiliary `X(n,k)`: words whose `k`-fold repetition is a loop. -/
-def X (n k : ℕ+) : ℕ :=
-  countFormulas n fun w => cyclicValid (Fin.repeat k w)
-
-/-- The reflection term in the dihedral Burnside sum. -/
-def XR (n : ℕ+) (k : ℕ) : ℕ :=
-  reflectionCyclicFixedCount n k
-
-
-
 end
 
 end RubiksSnake
