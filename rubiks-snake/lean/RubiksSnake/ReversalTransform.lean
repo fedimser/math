@@ -1,4 +1,4 @@
-import RubiksSnake.RotationRestricted
+import RubiksSnake.ReflectionTransform
 import RubiksSnake.FormulaTransform
 
 import Mathlib.Tactic.FinCases

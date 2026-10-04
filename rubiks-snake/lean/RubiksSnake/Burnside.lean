@@ -1,5 +1,6 @@
 import RubiksSnake.ReversalTransform
 import RubiksSnake.RotationRestricted
+import RubiksSnake.ReflectionTransform
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Data.Fintype.Quotient
 import Mathlib.GroupTheory.GroupAction.Quotient
@@ -162,12 +163,6 @@ theorem BurnsideForRubiksSnake (n : ℕ+)
   simpa [Nat.mul_comm] using hburnside
 
 
-
-/-- Definition of reflection transform. -/
-def reflectionTransform (n : ℕ) : InvolutiveFormulaTransform n where
-  toFun := mirrorFormula
-  involutive := mirrorFormula_involutive
-  valid_iff := valid_mirrorFormula
 
 lemma reverseFormula_mirrorFormula {n : ℕ} (w : Formula n) :
     reverseFormula (mirrorFormula w) = mirrorFormula (reverseFormula w) := by

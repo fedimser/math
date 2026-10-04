@@ -1,7 +1,10 @@
 import RubiksSnake.Burnside
 import RubiksSnake.Definitions
 import RubiksSnake.FormulaTransform
+import RubiksSnake.Geometry
+import RubiksSnake.Loops
+import RubiksSnake.ReflectionTransform
 import RubiksSnake.ReversalTransform
 import RubiksSnake.RotationRestricted
 import RubiksSnake.SmallCounts
-import RubiksSnake.SnAsymptotic
+import RubiksSnake.SnAsymptoticEasy

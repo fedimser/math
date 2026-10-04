@@ -1,5 +1,4 @@
-import RubiksSnake.Definitions
-import RubiksSnake.SnAsymptotic
+import RubiksSnake.Geometry
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 
