@@ -1,0 +1,11 @@
+name = "rubiks-snake"
+version = "0.1.0"
+defaultTargets = ["RubiksSnake"]
+
+[[lean_lib]]
+name = "RubiksSnake"
+roots = ["RubiksSnake.Definitions"]
+
+[[require]]
+name = "mathlib"
+path = "../../../lean-shad/.lake/packages/mathlib"

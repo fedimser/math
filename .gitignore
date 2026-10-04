@@ -11,3 +11,4 @@ rubiks-snake/paper-draft/*
 !rubiks-snake/paper-draft/paper.tex
 !rubiks-snake/paper-draft/refs.bib
 rubiks-snake/asymptotic-analysis-draft/*
+rubiks-snake/lean/.lake
