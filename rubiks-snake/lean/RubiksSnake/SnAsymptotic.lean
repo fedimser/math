@@ -9,20 +9,19 @@ lemma Sn_is_power_of_4 (n : ℕ+) (hfour : n ≤ 4) :
     S n = 4 ^ ((n : ℕ) - 1) := by
   rcases n with ⟨n, hn⟩
   change n ≤ 4 at hfour
-  have allValid : ∀ w : Word (n - 1), Valid w := by
+  have allValid : ∀ w : Formula (n - 1), Valid w := by
     obtain rfl | rfl | rfl | rfl : n = 1 ∨ n = 2 ∨ n = 3 ∨ n = 4 := by omega
     all_goals native_decide
-  let validEquiv : {w : Word (n - 1) // Valid w} ≃ Word (n - 1) :=
+  let validEquiv : {w : Formula (n - 1) // Valid w} ≃ Formula (n - 1) :=
     { toFun := Subtype.val
       invFun := fun w => ⟨w, allValid w⟩
       left_inv := fun _ => rfl
       right_inv := fun _ => rfl }
-  have hcount : countWords (n - 1) Valid = 4 ^ (n - 1) := by
-    rw [countWords, Nat.card_congr validEquiv]
-    simp [Word, Rotation]
-  change wordCount (n - 1) = 4 ^ (n - 1)
-  rw [wordCount, hcount, max_eq_right]
-  exact Nat.one_le_pow (n - 1) 4 (by omega)
+  have hcount : countFormulas (n - 1) Valid = 4 ^ (n - 1) := by
+    rw [countFormulas, Nat.card_congr validEquiv]
+    simp [Formula, Rotation]
+  change countValidFormulas (n - 1) = 4 ^ (n - 1)
+  exact hcount
 
 example : S 1 = 1 := by simpa using Sn_is_power_of_4 1
 example : S 2 = 4 := by simpa using Sn_is_power_of_4 2
@@ -30,20 +29,17 @@ example : S 3 = 16 := by simpa using Sn_is_power_of_4 3
 example : S 4 = 64 := by simpa using Sn_is_power_of_4 4
 
 /-- The valid formulas are a subset of all four-symbol words of the same length. -/
-lemma countWords_upper_bound (k : ℕ) : countWords k Valid ≤ 4 ^ k := by
-  unfold countWords
+lemma countFormulas_upper_bound (k : ℕ) : countFormulas k Valid ≤ 4 ^ k := by
+  unfold countFormulas
   calc
-    Nat.card {w : Word k // Valid w} ≤ Nat.card (Word k) :=
+    Nat.card {w : Formula k // Valid w} ≤ Nat.card (Formula k) :=
       Nat.card_le_card_of_injective Subtype.val Subtype.val_injective
-    _ = 4 ^ k := by simp [Word, Rotation]
+    _ = 4 ^ k := by simp [Formula, Rotation]
 
 /-- For every positive `n`, the number of valid formulas is at most `4^(n-1)`. -/
 lemma Sn_upper_bound_4n (n : ℕ+) : S n ≤ 4 ^ ((n : ℕ) - 1) := by
   rcases n with ⟨n, hn⟩
-  change max 1 (countWords (n - 1) Valid) ≤ 4 ^ (n - 1)
-  apply max_le
-  · exact Nat.one_le_pow (n - 1) 4 (by omega)
-  · exact countWords_upper_bound (n - 1)
+  exact countFormulas_upper_bound (n - 1)
 
 /-- A positive coordinate direction. -/
 def PositiveDirection (v : Vec3) : Prop :=
@@ -84,33 +80,33 @@ lemma increasingRotation_next {previous axis : Vec3}
     simp_all [increasingRotation, PositiveDirection, rotateQuarter, cross, ex, ey, ez]
   all_goals native_decide
 
-def increasingFormula : Vec3 → Vec3 → List Bool → List Rotation
+def increasingRotationList : Vec3 → Vec3 → List Bool → List Rotation
   | _, _, [] => []
   | previous, axis, choice :: choices =>
       let rotation := increasingRotation previous axis choice
       let next := rotateQuarter axis rotation previous
-      rotation :: increasingFormula axis next choices
+      rotation :: increasingRotationList axis next choices
 
-@[simp] lemma increasingFormula_length (previous axis : Vec3) (choices : List Bool) :
-    (increasingFormula previous axis choices).length = choices.length := by
+@[simp] lemma increasingRotationList_length (previous axis : Vec3) (choices : List Bool) :
+    (increasingRotationList previous axis choices).length = choices.length := by
   induction choices generalizing previous axis with
   | nil => rfl
   | cons choice choices ih =>
-      simp [increasingFormula, ih]
+      simp [increasingRotationList, ih]
 
-lemma increasingFormula_injective (previous axis : Vec3) :
-    Function.Injective (increasingFormula previous axis) := by
+lemma increasingRotationList_injective (previous axis : Vec3) :
+    Function.Injective (increasingRotationList previous axis) := by
   intro xs
   induction xs generalizing previous axis with
   | nil =>
       intro ys h
-      cases ys <;> simp_all [increasingFormula]
+      cases ys <;> simp_all [increasingRotationList]
   | cons choice choices ih =>
       intro ys h
       cases ys with
-      | nil => simp [increasingFormula] at h
+      | nil => simp [increasingRotationList] at h
       | cons choice' choices' =>
-          simp only [increasingFormula, List.cons.injEq] at h
+          simp only [increasingRotationList, List.cons.injEq] at h
           have hchoice : choice = choice' :=
             increasingRotation_injective previous axis h.1
           subst choice'
@@ -118,13 +114,13 @@ lemma increasingFormula_injective (previous axis : Vec3) :
           subst choices'
           rfl
 
-lemma directionTail_increasingFormula {previous axis : Vec3}
+lemma directionTail_increasingRotationList {previous axis : Vec3}
     (hprevious : PositiveDirection previous) (haxis : PositiveDirection axis)
     (hne : previous ≠ axis) (choices : List Bool) :
-    ∀ v ∈ directionTail previous axis (increasingFormula previous axis choices),
+    ∀ v ∈ directionTail previous axis (increasingRotationList previous axis choices),
       PositiveDirection v := by
   induction choices generalizing previous axis with
-  | nil => simp [increasingFormula, directionTail]
+  | nil => simp [increasingRotationList, directionTail]
   | cons choice choices ih =>
       let rotation := increasingRotation previous axis choice
       let next := rotateQuarter axis rotation previous
@@ -132,7 +128,7 @@ lemma directionTail_increasingFormula {previous axis : Vec3}
         simpa [rotation, next] using
           increasingRotation_next hprevious haxis hne choice
       intro v hv
-      simp only [increasingFormula, directionTail, List.mem_cons] at hv
+      simp only [increasingRotationList, directionTail, List.mem_cons] at hv
       rcases hv with rfl | hv
       · exact hnext.1
       · exact ih haxis hnext.1 hnext.2.symm v hv
@@ -211,14 +207,14 @@ lemma wedge_centers (rs : List Rotation) :
   apply List.map_fst_zip
   simp [centersFromDirections, directions, directionsFrom]
 
-lemma increasingFormula_validList (choices : List Bool) :
-    ValidList (increasingFormula ey ex choices) := by
-  let rs := increasingFormula ey ex choices
+lemma increasingRotationList_valid (choices : List Bool) :
+    ValidList (increasingRotationList ey ex choices) := by
+  let rs := increasingRotationList ey ex choices
   let ds := directions rs
   let steps := (ds.drop 1).dropLast
   have htail :
       ∀ v ∈ directionTail ey ex rs, PositiveDirection v := by
-    exact directionTail_increasingFormula
+    exact directionTail_increasingRotationList
       (by simp [PositiveDirection]) (by simp [PositiveDirection])
       (by native_decide) choices
   have hsteps : ∀ v ∈ steps, PositiveDirection v := by
@@ -245,52 +241,50 @@ lemma increasingFormula_validList (choices : List Bool) :
   unfold ValidList collisionFree
   exact hmapped.imp fun hne => Or.inl hne
 
-def increasingWord {k : ℕ} (choices : Fin k → Bool) : Word k :=
+def increasingFormula {k : ℕ} (choices : Fin k → Bool) : Formula k :=
   fun i =>
-    (increasingFormula ey ex (List.ofFn choices)).get
+    (increasingRotationList ey ex (List.ofFn choices)).get
       (Fin.cast (by simp) i)
 
-lemma increasingWord_toList {k : ℕ} (choices : Fin k → Bool) :
-    List.ofFn (increasingWord choices) =
-      increasingFormula ey ex (List.ofFn choices) := by
+lemma increasingFormula_toList {k : ℕ} (choices : Fin k → Bool) :
+    List.ofFn (increasingFormula choices) =
+      increasingRotationList ey ex (List.ofFn choices) := by
   apply List.ext_get
   · simp
   · intro i hi₁ hi₂
-    simp [increasingWord]
+    simp [increasingFormula]
 
-lemma increasingWord_valid {k : ℕ} (choices : Fin k → Bool) :
-    Valid (increasingWord choices) := by
+lemma increasingFormula_valid {k : ℕ} (choices : Fin k → Bool) :
+    Valid (increasingFormula choices) := by
   unfold Valid
-  rw [increasingWord_toList]
-  exact increasingFormula_validList (List.ofFn choices)
+  rw [increasingFormula_toList]
+  exact increasingRotationList_valid (List.ofFn choices)
 
-lemma increasingWord_injective (k : ℕ) :
-    Function.Injective (@increasingWord k) := by
+lemma increasingFormula_injective (k : ℕ) :
+    Function.Injective (@increasingFormula k) := by
   intro a b hab
   apply List.ofFn_injective
-  apply increasingFormula_injective ey ex
-  rw [← increasingWord_toList a, ← increasingWord_toList b, hab]
+  apply increasingRotationList_injective ey ex
+  rw [← increasingFormula_toList a, ← increasingFormula_toList b, hab]
 
-def increasingValidWord (k : ℕ) :
-    (Fin k → Bool) → {w : Word k // Valid w} :=
-  fun choices => ⟨increasingWord choices, increasingWord_valid choices⟩
+def increasingValidFormula (k : ℕ) :
+    (Fin k → Bool) → {w : Formula k // Valid w} :=
+  fun choices => ⟨increasingFormula choices, increasingFormula_valid choices⟩
 
-lemma increasingValidWord_injective (k : ℕ) :
-    Function.Injective (increasingValidWord k) := by
+lemma increasingValidFormula_injective (k : ℕ) :
+    Function.Injective (increasingValidFormula k) := by
   intro a b hab
-  apply increasingWord_injective k
+  apply increasingFormula_injective k
   exact congrArg Subtype.val hab
 
 lemma Sn_lower_bound_2n (n : ℕ+) : S n ≥ 2 ^ ((n : ℕ) - 1) := by
   rcases n with ⟨n, hn⟩
-  change 2 ^ (n - 1) ≤ max 1 (countWords (n - 1) Valid)
-  apply le_trans ?_ (le_max_right 1 (countWords (n - 1) Valid))
   calc
     2 ^ (n - 1) = Nat.card (Fin (n - 1) → Bool) := by simp
-    _ ≤ Nat.card {w : Word (n - 1) // Valid w} :=
+    _ ≤ Nat.card {w : Formula (n - 1) // Valid w} :=
       Nat.card_le_card_of_injective
-        (increasingValidWord (n - 1)) (increasingValidWord_injective (n - 1))
-    _ = countWords (n - 1) Valid := rfl
+        (increasingValidFormula (n - 1)) (increasingValidFormula_injective (n - 1))
+    _ = countFormulas (n - 1) Valid := rfl
 
 
 end RubiksSnake

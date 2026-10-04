@@ -17,7 +17,7 @@ noncomputable section
 
 abbrev Vec3 := Fin 3 → ℤ
 abbrev Rotation := Fin 4
-abbrev Word (n : ℕ) := Fin n → Rotation
+abbrev Formula (n : ℕ) := Fin n → Rotation
 
 def zeroVec : Vec3 := fun _ => 0
 def ex : Vec3 := ![1, 0, 0]
@@ -91,55 +91,55 @@ instance (rs : List Rotation) : Decidable (ValidList rs) := by
   unfold ValidList
   infer_instance
 
-def Valid {n : ℕ} (w : Word n) : Prop :=
+def Valid {n : ℕ} (w : Formula n) : Prop :=
   ValidList (List.ofFn w)
 
-instance {n : ℕ} (w : Word n) : Decidable (Valid w) := by
+instance {n : ℕ} (w : Formula n) : Decidable (Valid w) := by
   unfold Valid ValidList
   infer_instance
 
-def countWords (n : ℕ) (p : Word n → Prop) : ℕ :=
-  Nat.card {w : Word n // p w}
+def countFormulas (n : ℕ) (p : Formula n → Prop) : ℕ :=
+  Nat.card {w : Formula n // p w}
 
-/-- `wordCount k` counts valid rotation words of length `k`. -/
-def wordCount (k : ℕ) : ℕ :=
-  max 1 (countWords k Valid)
+/-- `countValidFormulas k` counts valid rotation formulas of length `k`. -/
+def countValidFormulas (k : ℕ) : ℕ :=
+  countFormulas k Valid
 
 /-- `S n` is the number of valid formulas for an `n`-wedge snake. -/
 def S (n : ℕ+) : ℕ :=
-  wordCount ((n : ℕ) - 1)
+  countValidFormulas (n - 1)
 
-def wordPrefix {p q : ℕ} (w : Word (p + q)) : Word p :=
+def formulaPrefix {p q : ℕ} (w : Formula (p + q)) : Formula p :=
   fun i => w (Fin.castAdd q i)
 
-def suffix {p q : ℕ} (w : Word (p + q)) : Word q :=
+def suffix {p q : ℕ} (w : Formula (p + q)) : Formula q :=
   fun i => w (Fin.natAdd p i)
 
-def reverseWord {n : ℕ} (w : Word n) : Word n :=
+def reverseFormula {n : ℕ} (w : Formula n) : Formula n :=
   fun i => w ⟨n - 1 - i.1, by omega⟩
 
 def reflectRotation (r : Rotation) : Rotation :=
   ⟨(4 - r.1) % 4, Nat.mod_lt _ (by omega)⟩
 
-def reflectWord {n : ℕ} (w : Word n) : Word n :=
+def reflectFormula {n : ℕ} (w : Formula n) : Formula n :=
   fun i => reflectRotation (w i)
 
-def fixedShapeCount (t : ∀ {n}, Word n → Word n) (n : ℕ+) : ℕ :=
-  countWords ((n : ℕ) - 1) fun w => Valid w ∧ t w = w
+def fixedShapeCount (t : ∀ {n}, Formula n → Formula n) (n : ℕ+) : ℕ :=
+  countFormulas ((n : ℕ) - 1) fun w => Valid w ∧ t w = w
 
 /-- Shapes fixed by head-tail reversal. -/
 def F (n : ℕ+) : ℕ :=
-  fixedShapeCount (@reverseWord) n
+  fixedShapeCount (@reverseFormula) n
 
 /-- Shapes up to reversal, as given by Burnside's lemma. -/
 def D (n : ℕ+) : ℕ :=
   (S n + F n) / 2
 
 def reflectionFixed (n : ℕ+) : ℕ :=
-  fixedShapeCount (@reflectWord) n
+  fixedShapeCount (@reflectFormula) n
 
 def reversalReflectionFixed (n : ℕ+) : ℕ :=
-  fixedShapeCount (fun w => reverseWord (reflectWord w)) n
+  fixedShapeCount (fun w => reverseFormula (reflectFormula w)) n
 
 def shapesUpToReflection (n : ℕ+) : ℕ :=
   (S n + reflectionFixed n) / 2
@@ -147,25 +147,25 @@ def shapesUpToReflection (n : ℕ+) : ℕ :=
 def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
   (S n + F n + reflectionFixed n + reversalReflectionFixed n) / 4
 
-def rotateWord {n : ℕ} (k : ℕ) (w : Word n) : Word n :=
+def rotateFormula {n : ℕ} (k : ℕ) (w : Formula n) : Formula n :=
   fun i => w ⟨(i.1 + k) % n, Nat.mod_lt _ (Nat.zero_lt_of_lt i.2)⟩
 
-def cyclicValid {n : ℕ} (w : Word n) : Prop :=
+def cyclicValid {n : ℕ} (w : Formula n) : Prop :=
   let ds := directions (List.ofFn w)
   collisionFree (List.ofFn w) ∧
     (centersFromDirections ds).getLastD zeroVec = zeroVec ∧
     ds.getLastD zeroVec = ex
 
 def cyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
-  countWords n fun w => cyclicValid w ∧ rotateWord k w = w
+  countFormulas n fun w => cyclicValid w ∧ rotateFormula k w = w
 
 def reflectionCyclicFixedCount (n : ℕ+) (k : ℕ) : ℕ :=
-  countWords n fun w =>
-    cyclicValid w ∧ rotateWord k (reverseWord w) = w
+  countFormulas n fun w =>
+    cyclicValid w ∧ rotateFormula k (reverseFormula w) = w
 
 /-- Formulas describing loops, with the closing joint included in the encoding. -/
 def L1 (n : ℕ+) : ℕ :=
-  countWords n cyclicValid
+  countFormulas n cyclicValid
 
 /-- Loops up to reversal. -/
 def L2 (n : ℕ+) : ℕ :=
@@ -182,7 +182,7 @@ def L4 (n : ℕ+) : ℕ :=
 
 /-- The Burnside auxiliary `X(n,k)`: words whose `k`-fold repetition is a loop. -/
 def X (n k : ℕ+) : ℕ :=
-  countWords n fun w => cyclicValid (Fin.repeat k w)
+  countFormulas n fun w => cyclicValid (Fin.repeat k w)
 
 /-- The reflection term in the dihedral Burnside sum. -/
 def XR (n : ℕ+) (k : ℕ) : ℕ :=
@@ -208,7 +208,7 @@ def GoodStep (rs : List Rotation) : Prop :=
 
 /-- The concatenable-step count `a_l` from the original asymptotic notebook. -/
 def a (l : ℕ+) : ℕ :=
-  countWords l fun w => GoodStep (List.ofFn w)
+  countFormulas l fun w => GoodStep (List.ofFn w)
 
 /-- The empirical consecutive-ratio sequence `r_n = S_(n+1) / S_n`. -/
 noncomputable def r (n : ℕ+) : ℝ :=
@@ -217,7 +217,7 @@ noncomputable def r (n : ℕ+) : ℝ :=
 def inSlab (width : ℕ) (p : Vec3) : Prop :=
   0 ≤ p 0 ∧ p 0 ≤ width
 
-def SlabBlock (d j : ℕ+) (w : Word j) : Prop :=
+def SlabBlock (d j : ℕ+) (w : Formula j) : Prop :=
   let ds := directionsFrom ex ey (List.ofFn w)
   collisionFree (List.ofFn w) ∧
     (centersFromDirections ds).getLastD zeroVec 0 = (d : ℕ) - 1 ∧
@@ -226,7 +226,7 @@ def SlabBlock (d j : ℕ+) (w : Word j) : Prop :=
 
 /-- `B d j` counts slab blocks of progress `d` and total encoded length `j`. -/
 def B (d j : ℕ+) : ℕ :=
-  countWords j (SlabBlock d j)
+  countFormulas j (SlabBlock d j)
 
 def IsSeparator (w : List Rotation) (h : ℕ) : Prop :=
   let cs := centersFromDirections (directionsFrom ex ey w)
@@ -234,12 +234,12 @@ def IsSeparator (w : List Rotation) (h : ℕ) : Prop :=
     (∀ i, i ≤ h → ∀ hi : i < cs.length, (cs.get ⟨i, hi⟩) 0 ≤ h) ∧
     (∀ i, h < i → ∀ hi : i < cs.length, h + 1 ≤ (cs.get ⟨i, hi⟩) 0)
 
-def IrreducibleSlabBlock (d j : ℕ+) (w : Word j) : Prop :=
+def IrreducibleSlabBlock (d j : ℕ+) (w : Formula j) : Prop :=
   SlabBlock d j w ∧ ∀ h < (d : ℕ) - 1, ¬IsSeparator (List.ofFn w) h
 
 /-- `I d j` counts irreducible slab blocks. -/
 def I (d j : ℕ+) : ℕ :=
-  countWords j (IrreducibleSlabBlock d j)
+  countFormulas j (IrreducibleSlabBlock d j)
 
 /-- `i_j` is the irreducible count summed over all possible progresses. -/
 def irreducibleLengthCount (j : ℕ+) : ℕ :=
@@ -254,23 +254,23 @@ def c : ℕ → ℕ
 termination_by k => k
 decreasing_by omega
 
-def validWindow (m : ℕ+) := {w : Word m // Valid w}
+def validWindow (m : ℕ+) := {w : Formula m // Valid w}
 
 /-- The finite-window adjacency matrix from the paper. -/
 def A (m : ℕ+) (v u : validWindow m) : ℕ :=
   Nat.card {r : Rotation //
-    ∃ w : Word ((m : ℕ) + 1), Valid w ∧
+    ∃ w : Formula ((m : ℕ) + 1), Valid w ∧
       (fun i : Fin (m : ℕ) => w ⟨i.1, by omega⟩) = u.1 ∧
       (fun i : Fin (m : ℕ) => w ⟨i.1 + 1, by omega⟩) = v.1}
 
 /-- Words accepted by every length-`m` sliding window. -/
-def windowWord {m : ℕ+} {n : ℕ} (w : Word n) (start : ℕ)
-    (h : start + (m : ℕ) ≤ n) : Word m :=
+def windowFormula {m : ℕ+} {n : ℕ} (w : Formula n) (start : ℕ)
+    (h : start + (m : ℕ) ≤ n) : Formula m :=
   fun i => w ⟨start + i.1, by omega⟩
 
 def windowPathCount (m : ℕ+) (n : ℕ) : ℕ :=
-  countWords n fun w =>
-    ∀ start, ∀ h : start + (m : ℕ) ≤ n, Valid (windowWord w start h)
+  countFormulas n fun w =>
+    ∀ start, ∀ h : start + (m : ℕ) ≤ n, Valid (windowFormula w start h)
 
 
 
