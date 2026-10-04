@@ -88,19 +88,24 @@ def reversalReflectionTransform (n : ℕ) : InvolutiveFormulaTransform n where
 
 
 /-- Shapes fixed by head-tail reversal. -/
-def F (n : ℕ+) : ℕ := fixedShapeCount n (reversalTransform _)
+def S_FIX_REV (n : ℕ+) : ℕ := fixedShapeCount n (reversalTransform _)
 
 /-- Shapes up to reversal. -/
-def D (n : ℕ+) : ℕ := shapesUpToTransform n (reversalTransform _)
+def S_UT_REV (n : ℕ+) : ℕ := shapesUpToTransform n (reversalTransform _)
 
-theorem BurnsideCorollary1 (n : ℕ+) :
-    S n + F n = 2 * D n := by
-  simpa [F, D] using BurnsideForRubiksSnake n (reversalTransform _)
+lemma BurnsideForReversal (n : ℕ+) :
+    S n + S_FIX_REV n = 2 * S_UT_REV n := by
+  simpa [S_FIX_REV, S_UT_REV] using BurnsideForRubiksSnake n (reversalTransform _)
 
-theorem BurnsideCorollary2 (n : ℕ+) :
-    S n + fixedShapeCount n (reflectionTransform _) =
-      2 * shapesUpToTransform n (reflectionTransform _) := by
-  exact BurnsideForRubiksSnake n (reflectionTransform _)
+/-- Shapes fixed by reflection. -/
+def S_FIX_REFL (n : ℕ+) : ℕ := fixedShapeCount n (reflectionTransform _)
+
+/-- Shapes up to reversal. -/
+def S_UT_REFL (n : ℕ+) : ℕ := shapesUpToTransform n (reflectionTransform _)
+
+lemma BurnsideForReflection (n : ℕ+) :
+    S n + S_FIX_REFL n = 2 * S_UT_REFL n := by
+  simpa [S_FIX_REFL, S_UT_REFL] using BurnsideForRubiksSnake n (reflectionTransform _)
 
 /-- Code below corresponds to
  https://github.com/fedimser/math/blob/master/rubiks-snake/count-loops.ipynb
