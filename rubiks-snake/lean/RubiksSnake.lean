@@ -1,3 +1,4 @@
 import RubiksSnake.Definitions
 import RubiksSnake.RotationRestricted
+import RubiksSnake.SmallCounts
 import RubiksSnake.SnAsymptotic

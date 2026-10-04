@@ -4,30 +4,6 @@ import RubiksSnake.Definitions
 
 namespace RubiksSnake
 
-/-- Show that for `n ≤ 4`, `S_n` is a power of four because all formulas are valid. -/
-lemma Sn_is_power_of_4 (n : ℕ+) (hfour : n ≤ 4) :
-    S n = 4 ^ ((n : ℕ) - 1) := by
-  rcases n with ⟨n, hn⟩
-  change n ≤ 4 at hfour
-  have allValid : ∀ w : Formula (n - 1), Valid w := by
-    obtain rfl | rfl | rfl | rfl : n = 1 ∨ n = 2 ∨ n = 3 ∨ n = 4 := by omega
-    all_goals native_decide
-  let validEquiv : {w : Formula (n - 1) // Valid w} ≃ Formula (n - 1) :=
-    { toFun := Subtype.val
-      invFun := fun w => ⟨w, allValid w⟩
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl }
-  have hcount : countFormulas (n - 1) Valid = 4 ^ (n - 1) := by
-    rw [countFormulas, Nat.card_congr validEquiv]
-    simp [Formula, Rotation]
-  change countValidFormulas (n - 1) = 4 ^ (n - 1)
-  exact hcount
-
-example : S 1 = 1 := by simpa using Sn_is_power_of_4 1
-example : S 2 = 4 := by simpa using Sn_is_power_of_4 2
-example : S 3 = 16 := by simpa using Sn_is_power_of_4 3
-example : S 4 = 64 := by simpa using Sn_is_power_of_4 4
-
 /-- The valid formulas are a subset of all four-symbol words of the same length. -/
 lemma countFormulas_upper_bound (k : ℕ) : countFormulas k Valid ≤ 4 ^ k := by
   unfold countFormulas
