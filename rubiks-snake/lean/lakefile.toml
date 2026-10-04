@@ -4,8 +4,9 @@ defaultTargets = ["RubiksSnake"]
 
 [[lean_lib]]
 name = "RubiksSnake"
-roots = ["RubiksSnake.Definitions"]
+roots = ["RubiksSnake"]
 
 [[require]]
 name = "mathlib"
-path = "../../../lean-shad/.lake/packages/mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.33.1"

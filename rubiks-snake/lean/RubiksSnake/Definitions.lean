@@ -147,10 +147,6 @@ def shapesUpToReflection (n : ℕ+) : ℕ :=
 def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
   (S n + F n + reflectionFixed n + reversalReflectionFixed n) / 4
 
-/-- Shapes using only rotation symbols from `allowed`. -/
-def SR (allowed : Finset Rotation) (n : ℕ+) : ℕ :=
-  countWords ((n : ℕ) - 1) fun w => Valid w ∧ ∀ i, w i ∈ allowed
-
 def rotateWord {n : ℕ} (k : ℕ) (w : Word n) : Word n :=
   fun i => w ⟨(i.1 + k) % n, Nat.mod_lt _ (Nat.zero_lt_of_lt i.2)⟩
 
