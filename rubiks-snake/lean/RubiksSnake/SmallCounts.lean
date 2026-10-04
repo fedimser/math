@@ -281,5 +281,6 @@ lemma S3_value: S 3 = 16 := by simpa using Sn_is_power_of_4 3
 lemma S4_value: S 4 = 64 := by simpa using Sn_is_power_of_4 4
 lemma S5_value: S 5 = 241 := by snake_decide
 lemma S6_value: S 6 = 920 := by snake_decide
+lemma S7_value : S 7 = 3384 := by snake_decide
 
 end RubiksSnake
