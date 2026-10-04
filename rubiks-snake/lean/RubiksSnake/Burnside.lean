@@ -1,5 +1,9 @@
 import RubiksSnake.ReversalTransform
 import RubiksSnake.RotationRestricted
+import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.Fintype.Quotient
+import Mathlib.GroupTheory.GroupAction.Quotient
+import Mathlib.Tactic.FinCases
 
 /-!
   Here we prove theorem that generalizes observation in
@@ -61,7 +65,101 @@ def shapesUpToTransform
 theorem BurnsideForRubiksSnake (n : ℕ+)
     (t : InvolutiveFormulaTransform ((n : ℕ) - 1)) :
     S n + fixedShapeCount n t = 2 * shapesUpToTransform n t := by
-  sorry
+  let k := (n : ℕ) - 1
+  let X := {w : Formula k // Valid w}
+  let f : X → X := validFormulaTransform t
+  let _ : AddAction (ZMod 2) X := {
+    vadd g w := if g = 0 then w else f w
+    zero_vadd _ := rfl
+    add_vadd g h w := by
+      fin_cases g <;> fin_cases h
+      · rfl
+      · rfl
+      · rfl
+      · change w = validFormulaTransform t (validFormulaTransform t w)
+        exact (validFormulaTransform_involutive t w).symm
+  }
+
+  let fixedZeroEquiv : AddAction.fixedBy X (0 : ZMod 2) ≃ X := {
+    toFun w := w.val
+    invFun w := ⟨w, rfl⟩
+    left_inv _ := rfl
+    right_inv _ := rfl
+  }
+
+  let fixedOneEquiv :
+      AddAction.fixedBy X (1 : ZMod 2) ≃
+        {w : Formula k // Valid w ∧ t w = w} := {
+    toFun w :=
+      ⟨w.val.val, w.val.property, congrArg Subtype.val w.property⟩
+    invFun w :=
+      ⟨⟨w.val, w.property.1⟩, Subtype.ext w.property.2⟩
+    left_inv _ := rfl
+    right_inv _ := rfl
+  }
+
+  let orbitEquiv :
+      Quotient (AddAction.orbitRel (ZMod 2) X) ≃
+        Quotient (transformOrbitSetoid t) :=
+    Quotient.congr (Equiv.refl X) fun a b => by
+      change (∃ g : ZMod 2, g +ᵥ b = a) ↔
+        a = b ∨ validFormulaTransform t a = b
+      constructor
+      · rintro ⟨g, hg⟩
+        fin_cases g
+        · exact Or.inl hg.symm
+        · right
+          rw [← hg]
+          exact validFormulaTransform_involutive t b
+      · rintro (rfl | hab)
+        · exact ⟨0, rfl⟩
+        · refine ⟨1, ?_⟩
+          change validFormulaTransform t b = a
+          rw [← hab]
+          exact validFormulaTransform_involutive t a
+
+  have hsum (counts : ZMod 2 → ℕ) :
+      (∑ g, counts g) = counts 0 + counts 1 := by
+    rw [← Equiv.sum_comp (ZMod.finEquiv 2).toEquiv counts]
+    simp [Fin.sum_univ_succ]
+
+  let _ : DecidableRel (AddAction.orbitRel (ZMod 2) X) :=
+    fun _ _ => Classical.propDecidable _
+  let _ : DecidableRel (transformOrbitSetoid t) :=
+    fun _ _ => Classical.propDecidable _
+
+  have hburnside :=
+    AddAction.sum_card_fixedBy_eq_card_orbits_mul_card_addGroup
+      (ZMod 2) X
+  rw [hsum] at hburnside
+  have hgroup : Fintype.card (ZMod 2) = 2 := ZMod.card 2
+  rw [hgroup] at hburnside
+
+  have hS : S n = Fintype.card X := by
+    unfold S countValidFormulas countFormulas
+    rw [Nat.card_eq_fintype_card]
+
+  have hfixed :
+      fixedShapeCount n t =
+        Fintype.card (AddAction.fixedBy X (1 : ZMod 2)) := by
+    unfold fixedShapeCount countFormulas
+    rw [Nat.card_eq_fintype_card]
+    exact (Fintype.card_congr fixedOneEquiv).symm
+
+  have hzero :
+      Fintype.card (AddAction.fixedBy X (0 : ZMod 2)) =
+        Fintype.card X :=
+    Fintype.card_congr fixedZeroEquiv
+
+  have horbits :
+      Fintype.card (Quotient (AddAction.orbitRel (ZMod 2) X)) =
+        shapesUpToTransform n t := by
+    unfold shapesUpToTransform
+    rw [Nat.card_eq_fintype_card]
+    exact Fintype.card_congr orbitEquiv
+
+  rw [hzero, ← hS, ← hfixed, horbits] at hburnside
+  simpa [Nat.mul_comm] using hburnside
 
 
 
@@ -122,7 +220,7 @@ def shapesUpToReflection (n : ℕ+) : ℕ :=
   (S n + reflectionFixed n) / 2
 
 def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
-  (S n + F n + reflectionFixed n + reversalReflectionFixed n) / 4
+  (S n + S_FIX_REV n + reflectionFixed n + reversalReflectionFixed n) / 4
 
 def rotateFormula {n : ℕ} (k : ℕ) (w : Formula n) : Formula n :=
   fun i => w ⟨(i.1 + k) % n, Nat.mod_lt _ (Nat.zero_lt_of_lt i.2)⟩
