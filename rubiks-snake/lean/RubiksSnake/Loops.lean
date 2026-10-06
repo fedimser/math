@@ -1,4 +1,5 @@
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.List.Rotate
 
 import RubiksSnake.Definitions
 import RubiksSnake.ReversalTransform
@@ -49,9 +50,181 @@ def shiftLoopFormula {n : ℕ} (k : ℤ) (w : Formula n) : Formula n :=
     w ⟨Int.natMod ((i.1 : ℤ) + k) n,
       Int.natMod_lt (Nat.ne_of_gt (Nat.zero_lt_of_lt i.2))⟩
 
+lemma ofFn_loopFrmToFrm {n : ℕ+} (w : Formula n) :
+    List.ofFn (loopFrmToFrm w) = (List.ofFn w).dropLast := by
+  apply List.ext_get
+  · simp
+  · intro i hi hj
+    simp only [List.get_eq_getElem, List.getElem_ofFn, List.getElem_dropLast,
+      loopFrmToFrm]
+    rfl
+
+lemma ofFn_shiftLoopFormula {n : ℕ} (k : ℤ) (w : Formula n) :
+    List.ofFn (shiftLoopFormula k w) =
+      (List.ofFn w).rotate (Int.natMod k n) := by
+  apply List.ext_get
+  · simp
+  · intro i hi hj
+    simp only [List.get_eq_getElem, List.getElem_ofFn, List.getElem_rotate,
+      List.length_ofFn, shiftLoopFormula]
+    apply congrArg w
+    apply Fin.ext
+    change Int.natMod ((i : ℤ) + k) n = (i + Int.natMod k n) % n
+    have hn : (n : ℤ) ≠ 0 := by
+      have hi' : i < n := by simpa using hi
+      omega
+    apply Int.ofNat_inj.mp
+    simp only [Int.natMod, Int.natCast_mod, Int.natCast_add,
+      Int.toNat_of_nonneg (Int.emod_nonneg _ hn)]
+    exact (Int.add_emod_emod _ _ _).symm
+
+private lemma directionsFrom_terminalFrame (e : RigidVecEquiv)
+    (rs : List Rotation) :
+    (directionsFrom (e ey) (e ex) rs).reverse.take 2 =
+      [terminalFrameFrom e rs ex, terminalFrameFrom e rs ey] := by
+  induction rs generalizing e with
+  | nil => rfl
+  | cons r rs ih =>
+      rw [directionsFrom_cons_frame, List.reverse_cons,
+        List.take_append_of_le_length (by simp [directionsFrom])]
+      exact ih (advanceFrame e r)
+
+private lemma eq_append_of_reverse_take_two {α : Type} (ds : List α) (a b : α)
+    (h : ds.reverse.take 2 = [b, a]) :
+    ∃ pre, ds = pre ++ [a, b] := by
+  refine ⟨(ds.reverse.drop 2).reverse, ?_⟩
+  have heq := congrArg List.reverse (List.take_append_drop 2 ds.reverse)
+  rw [h] at heq
+  simpa using heq.symm
+
+private def ValidLoopList (rs : List Rotation) : Prop :=
+  ValidList rs.dropLast ∧
+    (centersFromDirections (directions rs)).getLastD zeroVec = zeroVec ∧
+    (directions rs).reverse.take 2 = [ex, ey]
+
+private lemma isValidLoop_iff_list {n : ℕ+} (w : Formula n) :
+    isValidLoop w ↔ ValidLoopList (List.ofFn w) := by
+  unfold isValidLoop Valid ValidLoopList isLoop
+  rw [ofFn_loopFrmToFrm]
+
+private lemma validLoopList_rotate_one (r : Rotation) (rs : List Rotation)
+    (h : ValidLoopList (r :: rs)) : ValidLoopList (rs ++ [r]) := by
+  let e := advanceFrame RigidVecEquiv.refl r
+  let ds := directionsFrom (e ey) (e ex) rs
+  let first : Wedge := ⟨zeroVec, negVec ey, ex⟩
+  have hey : e ey = ex := by simp [e, RigidVecEquiv.refl]
+  have hex : e ex = rotateQuarter ex r ey := by simp [e, RigidVecEquiv.refl]
+  have hdirs : directions (r :: rs) = ey :: ds := by
+    exact directionsFrom_cons_frame RigidVecEquiv.refl r rs
+  have hstart : ds = ex :: directionTail ey ex (r :: rs) := by
+    simp only [ds, directionsFrom, hey, hex, directionTail]
+  have hterminal :
+      terminalFrameFrom e rs ex = ex ∧ terminalFrameFrom e rs ey = ey := by
+    have hend := h.2.2
+    change (directionsFrom (RigidVecEquiv.refl ey) (RigidVecEquiv.refl ex)
+      (r :: rs)).reverse.take 2 = [ex, ey] at hend
+    rw [directionsFrom_terminalFrame] at hend
+    simpa only [terminalFrameFrom, List.cons.injEq, and_true] using hend
+  have hend : ds.reverse.take 2 = [ex, ey] := by
+    rw [directionsFrom_terminalFrame, hterminal.1, hterminal.2]
+  obtain ⟨pre, hpre⟩ := eq_append_of_reverse_take_two ds ey ex hend
+  have hshift :
+      (directions (rs ++ [r])).map e = ds ++ [e ex] := by
+    change (directionsFrom ey ex (rs ++ [r])).map e = _
+    rw [← directionsFrom_rigid, directionsFrom_append_singleton_frame]
+    simp only [advanceFrame_ex, hterminal.1, hterminal.2, hex, ds]
+
+  have hfull :
+      wedges (r :: rs) = wedges ((r :: rs).dropLast) ++ [first] := by
+    obtain ⟨pre, hpre⟩ :=
+      eq_append_of_reverse_take_two (directions (r :: rs)) ey ex h.2.2
+    have hcenter :
+        (centersFromDirections (pre ++ [ey, ex])).getLastD zeroVec = zeroVec := by
+      rw [← hpre]
+      exact h.2.1
+    have hdrop : directions ((r :: rs).dropLast) = pre ++ [ey] := by
+      rw [directions_dropLast _ (by simp), hpre]
+      simp
+    unfold wedges
+    rw [hpre, hdrop, wedgesFromDirections_append_two, hcenter]
+  have hcons :
+      wedges (r :: rs) =
+        first :: ((wedges rs).map (rigidWedge e)).map (translateWedge ex) := by
+    change wedgesFromDirections (ey :: ex :: directionTail ey ex (r :: rs)) = _
+    rw [wedgesFromDirections_cons ey ex _ (by simp [directionTail])]
+    have hrigid : ex :: directionTail ey ex (r :: rs) =
+        (directions rs).map e := by
+      rw [← hstart]
+      exact directionsFrom_rigid e ey ex rs
+    rw [hrigid, wedgesFromDirections_rigid]
+    rfl
+  have hperm :
+      (((wedges rs).map (rigidWedge e)).map (translateWedge ex)).Perm
+        (wedges ((r :: rs).dropLast)) := by
+    apply List.Perm.cons_inv (a := first)
+    rw [← hcons, hfull]
+    exact List.perm_append_singleton first _
+  have hvalid :
+      (((wedges rs).map (rigidWedge e)).map (translateWedge ex)).Pairwise
+        interiorDisjoint :=
+    hperm.symm.pairwise h.1 (fun {_ _} => (interiorDisjoint_comm _ _).mp)
+  have hvalid' : ValidList rs := by
+    simpa only [ValidList, collisionFree, List.pairwise_map,
+      translateWedge_interiorDisjoint, rigidWedge_interiorDisjoint] using hvalid
+
+  have hsteps : ds.tail.Perm ds.dropLast := by
+    apply List.Perm.cons_inv (a := ex)
+    have hlast : ds = ds.dropLast ++ [ex] := by rw [hpre]; simp
+    have hhead : ex :: ds.tail = ds := by rw [hstart]; rfl
+    rw [hhead]
+    conv_lhs => rw [hlast]
+    exact List.perm_append_singleton ex _
+  have hsum : ds.tail.foldl addVec zeroVec = ds.dropLast.foldl addVec zeroVec :=
+    hsteps.foldl_eq' (fun u _ v _ p => by
+      funext i
+      simp [addVec, Int.add_right_comm]) zeroVec
+  have hzero : ds.dropLast.foldl addVec zeroVec = zeroVec := by
+    have hc := h.2.1
+    rw [hdirs] at hc
+    simpa [centersFromDirections, List.getLastD_eq_getLast?,
+      List.getLast?_scanl] using hc
+  have hmiddle : ((ds ++ [e ex]).drop 1).dropLast = ds.tail := by
+    rw [hstart]
+    simp
+  have hcenter :
+      (centersFromDirections (ds ++ [e ex])).getLastD zeroVec = zeroVec := by
+    simp only [centersFromDirections, hmiddle, List.getLastD_eq_getLast?,
+      List.getLast?_scanl, Option.getD_some, hsum, hzero]
+  refine ⟨by simpa using hvalid', ?_, ?_⟩
+  · apply e.toEquiv.injective
+    calc
+      _ = ((centersFromDirections (directions (rs ++ [r]))).map e).getLastD
+          (e zeroVec) := List.getLastD_map.symm
+      _ = (centersFromDirections (ds ++ [e ex])).getLastD zeroVec := by
+        rw [e.map_zero, ← centersFromDirections_rigid, hshift]
+      _ = e zeroVec := by rw [hcenter, e.map_zero]
+  · apply List.map_injective_iff.mpr e.toEquiv.injective
+    rw [List.map_take, List.map_reverse, hshift, hpre]
+    simp [hey]
+
+private lemma validLoopList_rotate (rs : List Rotation) (m : ℕ)
+    (h : ValidLoopList rs) : ValidLoopList (rs.rotate m) := by
+  induction m generalizing rs with
+  | zero => simpa using h
+  | succ m ih =>
+      cases rs with
+      | nil => simpa using h
+      | cons r rs =>
+          rw [List.rotate_cons_succ]
+          exact ih _ (validLoopList_rotate_one r rs h)
+
+/-- Changing the cut of a closed snake preserves closure and collision freedom. -/
 lemma shiftPreservesValidLoop (n: ℕ+) (k: ℤ) (w: Formula n):
     isValidLoop w → isValidLoop ((shiftLoopFormula k) w) := by
-  sorry
+  intro h
+  rw [isValidLoop_iff_list] at h ⊢
+  rw [ofFn_shiftLoopFormula]
+  exact validLoopList_rotate _ _ h
 
 def shiftTransform (n : ℕ+) (k : ℤ) : LoopTransform n where
   t := shiftLoopFormula k

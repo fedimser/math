@@ -52,26 +52,9 @@ private lemma directionsFrom_append_dropLast (previous axis : Vec3)
       simpa [directionsFrom, directionTail] using
         congrArg List.tail (ih axis (rotateQuarter axis s previous))
 
-private def wedgePath (center incoming outgoing : Vec3) : List Vec3 → List Wedge
-  | [] => [⟨center, negVec incoming, outgoing⟩]
-  | next :: rest =>
-      ⟨center, negVec incoming, outgoing⟩ ::
-        wedgePath (addVec center outgoing) outgoing next rest
-
 private lemma wedgePath_ne_nil (center incoming outgoing : Vec3) (rest : List Vec3) :
     wedgePath center incoming outgoing rest ≠ [] := by
   cases rest <;> simp [wedgePath]
-
-private lemma wedgesFromDirections_eq_wedgePath
-    (center incoming outgoing : Vec3) (rest : List Vec3) :
-    (((outgoing :: rest).dropLast.scanl addVec center).zip
-        ((incoming, outgoing) :: (outgoing :: rest).zip rest)).map
-      (fun x => ⟨x.1, negVec x.2.1, x.2.2⟩) =
-      wedgePath center incoming outgoing rest := by
-  induction rest generalizing center incoming outgoing with
-  | nil => simp [wedgePath]
-  | cons next rest ih =>
-      simp [wedgePath, ih]
 
 private lemma wedgePath_append_dropLast (center incoming outgoing : Vec3)
     (rest : List Vec3) (d : Vec3) :

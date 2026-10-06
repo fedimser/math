@@ -4,6 +4,23 @@ import RubiksSnake.Definitions
 
 namespace RubiksSnake
 
+@[simp] lemma addVec_zero_left (v : Vec3) : addVec zeroVec v = v := by
+  funext i
+  simp [addVec, zeroVec]
+
+@[simp] lemma addVec_zero_right (v : Vec3) : addVec v zeroVec = v := by
+  funext i
+  simp [addVec, zeroVec]
+
+lemma addVec_assoc (u v w : Vec3) :
+    addVec (addVec u v) w = addVec u (addVec v w) := by
+  funext i
+  simp [addVec, Int.add_assoc]
+
+@[simp] lemma addVec_neg_right (v : Vec3) : addVec v (negVec v) = zeroVec := by
+  funext i
+  simp [addVec, negVec, zeroVec]
+
 /-- A positive coordinate direction. -/
 def PositiveDirection (v : Vec3) : Prop :=
   v = ex ∨ v = ey ∨ v = ez
@@ -158,6 +175,205 @@ lemma scanl_pairwise_coordinateSum (steps : List Vec3) (start : Vec3)
   induction rs generalizing previous axis with
   | nil => rfl
   | cons r rs ih => simp [directionTail, ih]
+
+lemma directionTail_dropLast (previous axis : Vec3) (rs : List Rotation) :
+    directionTail previous axis rs.dropLast =
+      (directionTail previous axis rs).dropLast := by
+  induction rs generalizing previous axis with
+  | nil => rfl
+  | cons r rs ih =>
+      cases rs with
+      | nil => rfl
+      | cons s rs => simp only [List.dropLast_cons_cons, directionTail, ih]
+
+lemma directions_dropLast (rs : List Rotation) (hne : rs ≠ []) :
+    directions rs.dropLast = (directions rs).dropLast := by
+  cases rs with
+  | nil => contradiction
+  | cons r rs =>
+      simp [directions, directionsFrom, directionTail, directionTail_dropLast]
+
+/-- Translation changes a wedge's center, but not its two face directions. -/
+def translateWedge (offset : Vec3) (w : Wedge) : Wedge :=
+  ⟨addVec offset w.center, w.entrance, w.exit⟩
+
+@[simp] lemma translateWedge_zero (w : Wedge) :
+    translateWedge zeroVec w = w := by
+  cases w
+  simp [translateWedge]
+
+lemma translateWedge_add (p q : Vec3) (w : Wedge) :
+    translateWedge p (translateWedge q w) = translateWedge (addVec p q) w := by
+  cases w
+  simp [translateWedge, addVec_assoc]
+
+lemma translateWedge_interiorDisjoint (offset : Vec3) (a b : Wedge) :
+    interiorDisjoint (translateWedge offset a) (translateWedge offset b) ↔
+      interiorDisjoint a b := by
+  have hcenter : addVec offset a.center = addVec offset b.center ↔
+      a.center = b.center := by
+    constructor
+    · intro h
+      funext i
+      have hi := congrFun h i
+      simpa [addVec] using hi
+    · exact congrArg (addVec offset)
+  simp only [interiorDisjoint, translateWedge, ne_eq, hcenter]
+
+lemma centersFromDirections_cons (first second : Vec3) (rest : List Vec3)
+    (hne : rest ≠ []) :
+    centersFromDirections (first :: second :: rest) =
+      zeroVec :: (centersFromDirections (second :: rest)).map (addVec second) := by
+  cases rest with
+  | nil => contradiction
+  | cons third rest =>
+      simp only [centersFromDirections, List.drop_succ_cons, List.drop_zero,
+        List.dropLast_cons_cons, List.scanl_cons]
+      congr 1
+      apply List.ext_get
+      · simp
+      · intro i hi hj
+        simp only [List.get_eq_getElem, List.getElem_scanl, List.getElem_map]
+        have hzero : addVec second zeroVec = addVec zeroVec second := by
+          funext j
+          simp [addVec, zeroVec]
+        rw [← hzero]
+        apply List.foldl_hom (addVec second)
+        intro u v
+        funext j
+        simp [addVec, Int.add_assoc]
+
+lemma wedgesFromDirections_cons (first second : Vec3) (rest : List Vec3)
+    (hne : rest ≠ []) :
+    wedgesFromDirections (first :: second :: rest) =
+      ⟨zeroVec, negVec first, second⟩ ::
+        (wedgesFromDirections (second :: rest)).map (translateWedge second) := by
+  unfold wedgesFromDirections
+  rw [centersFromDirections_cons first second rest hne]
+  simp only [List.tail_cons, List.zip_cons_cons, List.map_cons]
+  congr 1
+  rw [List.zip_map_left, List.map_map, List.map_map]
+  rfl
+
+lemma wedgesFromDirections_append_two (pre : List Vec3) (a b : Vec3) :
+    wedgesFromDirections (pre ++ [a, b]) =
+      wedgesFromDirections (pre ++ [a]) ++
+        [⟨(centersFromDirections (pre ++ [a, b])).getLastD zeroVec,
+          negVec a, b⟩] := by
+  induction pre with
+  | nil =>
+      simp [wedgesFromDirections, centersFromDirections]
+  | cons first pre ih =>
+      cases pre with
+      | nil =>
+          simp [wedgesFromDirections, centersFromDirections]
+      | cons second pre =>
+          have hlong : pre ++ [a, b] ≠ [] := by simp
+          have hshort : pre ++ [a] ≠ [] := by simp
+          have hlast :
+              (centersFromDirections (first :: second :: (pre ++ [a, b]))).getLastD
+                  zeroVec =
+                addVec second
+                  ((centersFromDirections (second :: (pre ++ [a, b]))).getLastD
+                    zeroVec) := by
+            rw [centersFromDirections_cons first second _ hlong, List.getLastD_cons]
+            simp [List.getLastD_eq_getLast?,
+              centersFromDirections, List.getLast?_scanl]
+          simp only [List.cons_append] at ih ⊢
+          rw [wedgesFromDirections_cons first second _ hlong,
+            wedgesFromDirections_cons first second _ hshort, ih,
+            List.map_append, List.map_singleton, List.cons_append, hlast]
+          rfl
+
+def wedgePath (center incoming outgoing : Vec3) : List Vec3 → List Wedge
+  | [] => [⟨center, negVec incoming, outgoing⟩]
+  | next :: rest =>
+      ⟨center, negVec incoming, outgoing⟩ ::
+        wedgePath (addVec center outgoing) outgoing next rest
+
+lemma wedgesFromDirections_eq_wedgePath
+    (center incoming outgoing : Vec3) (rest : List Vec3) :
+    (((outgoing :: rest).dropLast.scanl addVec center).zip
+        ((incoming, outgoing) :: (outgoing :: rest).zip rest)).map
+      (fun x => ⟨x.1, negVec x.2.1, x.2.2⟩) =
+      wedgePath center incoming outgoing rest := by
+  induction rest generalizing center incoming outgoing with
+  | nil => simp [wedgePath]
+  | cons next rest ih => simp [wedgePath, ih]
+
+structure SlabState where
+  center : Vec3
+  previous : Vec3
+  axis : Vec3
+deriving DecidableEq
+
+def SlabState.wedge (s : SlabState) : Wedge :=
+  ⟨s.center, negVec s.previous, s.axis⟩
+
+def slabStep (s : SlabState) (r : Rotation) : SlabState :=
+  ⟨addVec s.center s.axis, s.axis, rotateQuarter s.axis r s.previous⟩
+
+def slabRun : SlabState → List Rotation → SlabState
+  | s, [] => s
+  | s, r :: rs => slabRun (slabStep s r) rs
+
+def slabNewWedges : SlabState → List Rotation → List Wedge
+  | _, [] => []
+  | s, r :: rs =>
+      (slabStep s r).wedge :: slabNewWedges (slabStep s r) rs
+
+lemma slabRun_append (s : SlabState) (a b : List Rotation) :
+    slabRun s (a ++ b) = slabRun (slabRun s a) b := by
+  induction a generalizing s with
+  | nil => rfl
+  | cons r rs ih => simpa [slabRun] using ih (slabStep s r)
+
+lemma slabNewWedges_append (s : SlabState) (a b : List Rotation) :
+    slabNewWedges s (a ++ b) =
+      slabNewWedges s a ++ slabNewWedges (slabRun s a) b := by
+  induction a generalizing s with
+  | nil => rfl
+  | cons r rs ih => simp [slabNewWedges, slabRun, ih]
+
+lemma wedgePath_eq_slabNewWedges (s : SlabState) (rs : List Rotation) :
+    wedgePath s.center s.previous s.axis (directionTail s.previous s.axis rs) =
+      s.wedge :: slabNewWedges s rs := by
+  induction rs generalizing s with
+  | nil => rfl
+  | cons r rs ih =>
+      simpa [wedgePath, directionTail, slabNewWedges, slabStep, SlabState.wedge]
+        using congrArg (s.wedge :: ·) (ih (slabStep s r))
+
+lemma wedges_eq_slabNewWedges (rs : List Rotation) :
+    wedges rs =
+      (SlabState.mk zeroVec ey ex).wedge ::
+        slabNewWedges ⟨zeroVec, ey, ex⟩ rs := by
+  unfold wedges wedgesFromDirections centersFromDirections directions directionsFrom
+  simp only [List.drop_succ_cons, List.drop_zero, List.tail_cons, List.zip_cons_cons]
+  rw [wedgesFromDirections_eq_wedgePath]
+  exact wedgePath_eq_slabNewWedges ⟨zeroVec, ey, ex⟩ rs
+
+def slabTranslate (p : Vec3) (s : SlabState) : SlabState :=
+  ⟨addVec p s.center, s.previous, s.axis⟩
+
+lemma slabStep_translate (p : Vec3) (s : SlabState) (r : Rotation) :
+    slabStep (slabTranslate p s) r = slabTranslate p (slabStep s r) := by
+  simp [slabStep, slabTranslate, addVec_assoc]
+
+lemma slabRun_translate (p : Vec3) (s : SlabState) (rs : List Rotation) :
+    slabRun (slabTranslate p s) rs = slabTranslate p (slabRun s rs) := by
+  induction rs generalizing s with
+  | nil => rfl
+  | cons r rs ih => simp [slabRun, slabStep_translate, ih]
+
+lemma slabNewWedges_translate (p : Vec3) (s : SlabState) (rs : List Rotation) :
+    slabNewWedges (slabTranslate p s) rs =
+      (slabNewWedges s rs).map (translateWedge p) := by
+  induction rs generalizing s with
+  | nil => rfl
+  | cons r rs ih =>
+      simp only [slabNewWedges, slabStep_translate, ih, List.map_cons]
+      rfl
 
 lemma wedge_centers (rs : List Rotation) :
     (wedges rs).map Wedge.center = centersFromDirections (directions rs) := by

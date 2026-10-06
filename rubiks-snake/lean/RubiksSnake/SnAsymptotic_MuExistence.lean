@@ -174,6 +174,59 @@ lemma tendsto_logValidFormulaCount_div :
 lemma snakeGrowthConstant_pos : 0 < snakeGrowthConstant :=
   Real.exp_pos _
 
+/-- Submultiplicativity makes the limiting exponential rate a pointwise
+lower bound, with no prefactor or exceptional lengths. -/
+theorem snakeGrowthConstant_pow_le_countValidFormulas (k : ℕ) :
+    snakeGrowthConstant ^ k ≤ (countValidFormulas k : ℝ) := by
+  by_cases hk : k = 0
+  · subst k
+    have h0 : countValidFormulas 0 = 1 := by simpa [S] using S1_value
+    norm_num [h0]
+  · have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero hk
+    have hlim := logValidFormulaCount_subadditive.lim_le_div
+      logValidFormulaCount_div_bddBelow hk
+    have hmul :
+        (k : ℝ) * logValidFormulaCount_subadditive.lim ≤ logValidFormulaCount k := by
+      simpa [mul_comm] using (le_div_iff₀ hkpos).mp hlim
+    rw [snakeGrowthConstant, ← Real.exp_nat_mul]
+    calc
+      Real.exp ((k : ℝ) * logValidFormulaCount_subadditive.lim) ≤
+          Real.exp (logValidFormulaCount k) := Real.exp_le_exp.mpr hmul
+      _ = countValidFormulas k := by
+        rw [logValidFormulaCount, Real.exp_log]
+        exact_mod_cast countValidFormulas_pos k
+
+theorem snakeGrowthConstant_ge_of_pointwise
+    (C q : ℝ) (hC : 0 < C) (hq : 0 < q)
+    (hcount : ∀ k : ℕ, C * q ^ k ≤ (countValidFormulas k : ℝ)) :
+    q ≤ snakeGrowthConstant := by
+  have hzero : Tendsto (fun k : ℕ => Real.log C / (k : ℝ)) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop tendsto_natCast_atTop_atTop
+  have hlower :
+      Tendsto (fun k : ℕ => Real.log C / (k : ℝ) + Real.log q)
+        atTop (𝓝 (Real.log q)) := by
+    simpa using hzero.add_const (Real.log q)
+  have hlog : Real.log q ≤ Real.log snakeGrowthConstant := by
+    apply le_of_tendsto_of_tendsto hlower tendsto_logValidFormulaCount_div
+    filter_upwards [eventually_ge_atTop 1] with k hk
+    have hk0 : (k : ℝ) ≠ 0 := by
+      exact_mod_cast (show k ≠ 0 by omega)
+    have hcompare : Real.log (C * q ^ k) ≤ Real.log (countValidFormulas k) :=
+      Real.strictMonoOn_log.monotoneOn
+        (mul_pos hC (pow_pos hq k))
+        (by
+          change (0 : ℝ) < countValidFormulas k
+          exact_mod_cast countValidFormulas_pos k) (hcount k)
+    rw [Real.log_mul hC.ne' (pow_pos hq k).ne', Real.log_pow] at hcompare
+    have hdiv := div_le_div_of_nonneg_right hcompare (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
+    have heq :
+        (Real.log C + (k : ℝ) * Real.log q) / (k : ℝ) =
+          Real.log C / (k : ℝ) + Real.log q := by
+      field_simp
+    simpa only [heq, logValidFormulaCount] using hdiv
+  rw [← Real.exp_log hq, ← Real.exp_log snakeGrowthConstant_pos]
+  exact Real.exp_le_exp.mpr hlog
+
 lemma tendsto_countValidFormulas_rpow :
     Tendsto
       (fun k : ℕ => (countValidFormulas k : ℝ) ^ (1 / (k : ℝ)))

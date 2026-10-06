@@ -8,6 +8,8 @@ rubiks-snake/agents/*
 rubiks-snake/papers/*
 rubiks-snake/paper-draft/*
 !rubiks-snake/paper-draft/*.cls
+!rubiks-snake/paper-draft/*.py
+!rubiks-snake/paper-draft/*.png
 !rubiks-snake/paper-draft/paper.tex
 !rubiks-snake/paper-draft/refs.bib
 rubiks-snake/asymptotic-analysis-draft/*

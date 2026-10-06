@@ -3,14 +3,63 @@ import RubiksSnake.SnAsymptotitc_MuUpperBound
 /-!
 # An explicit pointwise upper bound
 
-Submultiplicativity splits a word length into six-letter blocks and a residue.
-The exact block count supplies the exponential factor; the uniform constant
-absorbs the five possible leftover letters.
+The compressed collision-prefix certificate gives
+`S n <= (9/2) * 3.675^(n-1)` for every positive snake length.
+The smaller seven- and five-symbol window certificates and the older
+block-submultiplicativity API remain available.
 -/
 
 namespace RubiksSnake
 
 noncomputable section
+
+/-- A uniform upper bound from the compressed collision-prefix automaton. -/
+theorem countValidFormulas_upper_bound_147_div_40 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤ (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ k :=
+  countValidFormulas_le_forbidden_prefix_upper k
+
+theorem Sn_upper_bound_147_div_40 (n : ℕ+) :
+    (S n : ℝ) ≤ (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_147_div_40 ((n : ℕ) - 1)
+
+/-- The seven-symbol window bound has base `3.704` and prefactor `8/3`. -/
+theorem countValidFormulas_upper_bound_463_div_125 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤ (8 / 3 : ℝ) * (463 / 125 : ℝ) ^ k :=
+  countValidFormulas_le_seven_window_upper k
+
+/-- For every positive snake length, `S n <= (8/3) * 3.704^(n-1)`. -/
+theorem Sn_upper_bound_463_div_125 (n : ℕ+) :
+    (S n : ℝ) ≤ (8 / 3 : ℝ) * (463 / 125 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_463_div_125 ((n : ℕ) - 1)
+
+/-- The window certificate bounds every formula length, with base `3.7202`
+and prefactor `9/4`. -/
+theorem countValidFormulas_upper_bound_18601_div_5000 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤
+      (9 / 4 : ℝ) * (18601 / 5000 : ℝ) ^ k :=
+  countValidFormulas_le_window_upper k
+
+/-- For every positive snake length, `S n <= (9/4) * 3.7202^(n-1)`. -/
+theorem Sn_upper_bound_18601_div_5000 (n : ℕ+) :
+    (S n : ℝ) ≤
+      (9 / 4 : ℝ) * (18601 / 5000 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_18601_div_5000 ((n : ℕ) - 1)
+
+/-- A rounded form of the window bound, still valid at every formula length. -/
+theorem countValidFormulas_upper_bound_373_div_100 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤
+      (9 / 4 : ℝ) * (373 / 100 : ℝ) ^ k := by
+  apply (countValidFormulas_upper_bound_18601_div_5000 k).trans
+  apply mul_le_mul_of_nonneg_left
+  · exact pow_le_pow_left₀ (by norm_num) (by norm_num) k
+  · norm_num
+
+/-- In particular, every positive snake length has an upper bound with
+base `3.73` and prefactor `9/4`. -/
+theorem Sn_upper_bound_373_div_100 (n : ℕ+) :
+    (S n : ℝ) ≤
+      (9 / 4 : ℝ) * (373 / 100 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_373_div_100 ((n : ℕ) - 1)
 
 /-- Iterated submultiplicativity for a quotient-block-residue decomposition. -/
 lemma countValidFormulas_mul_add_le (blocks block residue : ℕ) :

@@ -211,27 +211,6 @@ lemma directionsFrom_reverse_frame (e : RigidVecEquiv)
         congrArg (negVec (advanceFrame (terminalFrameFrom e rs) r ex) :: ·)
           (ih e)
 
-@[simp] lemma addVec_zero_left (v : Vec3) :
-    addVec zeroVec v = v := by
-  funext i
-  simp [addVec, zeroVec]
-
-@[simp] lemma addVec_zero_right (v : Vec3) :
-    addVec v zeroVec = v := by
-  funext i
-  simp [addVec, zeroVec]
-
-lemma addVec_assoc (u v w : Vec3) :
-    addVec (addVec u v) w = addVec u (addVec v w) := by
-  funext i
-  simp [addVec]
-  ring
-
-@[simp] lemma addVec_neg_right (v : Vec3) :
-    addVec v (negVec v) = zeroVec := by
-  funext i
-  simp [addVec, negVec, zeroVec]
-
 def sumVec (steps : List Vec3) : Vec3 :=
   steps.foldl addVec zeroVec
 
