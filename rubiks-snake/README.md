@@ -47,33 +47,65 @@ The five summary theorems are in
 the following bounds using exact decimal constants, reusing the existing proofs:
 
 $$
-3.193 \leq \mu \leq 3.675,
+3.400034903 \leq \mu \leq 3.661786723,
 \qquad
-(3.193)^{n-1} \leq S_n \leq 4.5(3.675)^{n-1}
+(3.400034903)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
 \quad(n\geq1).
 $$
 
-The [plane-block construction](lean/RubiksSnake/SlabBlocks.lean) gives a base
-of 3.1. The stronger [occupied-interface construction](lean/RubiksSnake/RecordBlocks.lean)
+The [irreducible-slab construction](lean/RubiksSnake/SlabLowerBound.lean)
+verifies the master paper's lower endpoint. It uses slab widths 0, 1, and 2,
+with internal-edge cutoffs 28, 20, and 18. A restoring byte-array traversal
+checks the exact coefficients in about five minutes. The small
+[computation library](lean/RubiksSnakeComputation.lean) is compiled to native
+code automatically by Lake; the mathematical proofs do not require native
+compilation of mathlib.
+[Enumeration correctness](lean/RubiksSnake/SlabEnumeration.lean),
+[collision freedom](lean/RubiksSnake/SlabBlockValidity.lean), and
+[unique decoding](lean/RubiksSnake/SlabLanguage.lean) are proved separately.
+A block is selected by requiring a backward crossing of every internal slab
+boundary, avoiding the subtraction recurrence used by the Python certificate.
+
+The earlier [plane-block construction](lean/RubiksSnake/SlabBlocks.lean) gives a base
+of 3.1. The [occupied-interface construction](lean/RubiksSnake/RecordBlocks.lean)
 allows a block to revisit the preceding plane. It checks compatibility
 against the preceding block, proves that the entire concatenation is
 collision-free, and proves unique decoding. One
 [weighted continuation step](lean/RubiksSnake/WeightedRecordLowerBound.lean)
 gives the base 3.193 on the same 428-block language; using only uniform
 continuation counts gives 3.16.
-The [upper bound](lean/RubiksSnake/ForbiddenPrefixUpperBound.lean) uses the
-proper prefixes of short collision factors. Its automaton has 46,599 states;
-twenty sparse integer iterations generate the potential. A four-step terminal
+The [upper bound](lean/RubiksSnake/ForbiddenPrefixSixteenUpperBound.lean) uses the
+proper prefixes of collision factors through length 16. Its automaton has
+4,748,260 states; 48 sparse integer iterations generate the potential. A six-step terminal
 estimate handles states with no long continuation, without an artificial
 positive weight that would inflate the prefactor.
 The smaller [seven-symbol window](lean/RubiksSnake/WindowSevenUpperBound.lean)
 also gives $S_n\leq(8/3)(3.704)^{n-1}$.
-These are separately checked certificates, not a formalization of the
-paper's larger numerical computations.
+The length-16 finite check took about 36 minutes, with peak RSS of 2.30 GiB under a
+6 GiB address-space cap. The smaller
+[length-14 certificate](lean/RubiksSnake/ForbiddenPrefixFourteenUpperBound.lean)
+matches the master paper's upper endpoint 3.667542939 and takes about four minutes.
+The strongest formal bounds match the master paper's lower endpoint and improve
+its upper endpoint. Their remaining base gap is 0.261751820, not yet below 0.1.
 
 [Submultiplicativity](lean/RubiksSnake/SnAsymptotic_MuExistence.lean) also gives
 $\mu^{n-1}\leq S_n$ at every positive length. Consequently, any lower bound on
 $\mu$ gives a pointwise lower bound with prefactor one.
+
+The [bounded-component comparison](lean/RubiksSnake/BoundedComponents.lean)
+proves that counting a fixed number of independent snake components, even
+with a polynomial number of placements, does not increase the exponential
+rate. The comparison also covers a variable number of components within a
+fixed bound, indexed by total wedges. A
+[frame-normalization lemma](lean/RubiksSnake/CardinalDirections.lean)
+connects paths in any cardinal initial frame to the original rotation formulas.
+The [finite-transfer criterion](lean/RubiksSnake/FiniteTransfer.lean) proves
+divergence of a weighted transfer series from a nonzero nonnegative
+subeigenvector, without assuming irreducibility.
+A rank inequality bounds construction steps by wedge count, including
+zero-wedge steps.
+These are counting tools; they do not certify an additional geometric
+construction or improve the displayed numerical bounds.
 
 The [loop development](lean/RubiksSnake/Loops.lean) proves preservation of
 validity under every integer cyclic shift, including negative shifts.

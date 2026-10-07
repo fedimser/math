@@ -17,21 +17,31 @@ namespace FiniteWindowUpper
 
 open WindowComputation
 
+/-- The last at most `width` rotations, retaining the whole word when it is
+shorter than the window. -/
 def suffix (width : ℕ) (rs : List Rotation) : List Rotation :=
   rs.drop (rs.length - width)
 
+/-- Sum of suffix-state weights over actual valid words with `k` rotations
+(`k + 1` wedges), retaining multiplicity when words share a suffix state. -/
 def totalWeight (width : ℕ) (w : List Rotation → ℕ) (k : ℕ) : ℕ :=
   ((validWords k).map fun rs => w (suffix width rs)).sum
 
+/-- Counts locally accepted window paths of a given length, with one empty path;
+these counts may exceed the numbers of globally valid extensions. -/
 def continuations : ℕ → List Rotation → ℕ
   | 0 => fun _ => 1
   | t + 1 => outgoing (continuations t)
 
+/-- Once the word has filled the window, its retained suffix has exactly
+`width` rotations. -/
 private lemma suffix_length (width : ℕ) (rs : List Rotation) (hlen : width ≤ rs.length) :
     (suffix width rs).length = width := by
   simp only [suffix, List.length_drop]
   omega
 
+/-- For a positive, already filled window, appending a rotation updates the
+retained suffix by dropping its oldest rotation and appending the new one. -/
 private lemma suffix_append (width : ℕ) (hw : 0 < width)
     (rs : List Rotation) (r : Rotation) (hlen : width ≤ rs.length) :
     suffix width (rs ++ [r]) = next (suffix width rs) r := by
@@ -40,6 +50,8 @@ private lemma suffix_append (width : ℕ) (hw : 0 < width)
   congr 2
   omega
 
+/-- Expresses a weighted sum over valid children as a sum over all four rotation
+choices, with zero contribution from rejected extensions. -/
 lemma children_sum (f : List Rotation → ℕ) (rs : List Rotation) :
     ((children rs).map f).sum =
       (rotations.map fun r => if valid (rs ++ [r]) then f (rs ++ [r]) else 0).sum := by
@@ -50,6 +62,8 @@ lemma children_sum (f : List Rotation → ℕ) (rs : List Rotation) :
   | cons r xs ih =>
       by_cases hr : valid (rs ++ [r]) <;> simp [hr, ih]
 
+/-- For a positive full window, every valid child passes the suffix-only check,
+so its suffix weight is covered by the local outgoing sum. -/
 private lemma children_sum_le (width : ℕ) (hw : 0 < width)
     (f : List Rotation → ℕ) (rs : List Rotation) (hlen : width ≤ rs.length) :
     ((children rs).map fun child => f (suffix width child)).sum ≤
@@ -67,6 +81,8 @@ private lemma children_sum_le (width : ℕ) (hw : 0 < width)
     simp [hcan, hshort, suffix_append width hw rs r hlen]
   · simp [hcan]
 
+/-- Regroups natural-number weights over a flattened list into sums over its
+component lists, as needed to sum extensions by parent word. -/
 lemma sum_map_flatMap {α β : Type*} (xs : List α)
     (g : α → List β) (f : β → ℕ) :
     ((xs.flatMap g).map f).sum = (xs.map fun x => ((g x).map f).sum).sum := by
@@ -74,10 +90,14 @@ lemma sum_map_flatMap {α β : Type*} (xs : List α)
   | nil => simp
   | cons x xs ih => simp [ih]
 
+/-- Constant-one state weights recover the count of valid `k`-rotation formulas,
+independently of the window width. -/
 lemma totalWeight_one (width k : ℕ) :
     totalWeight width (fun _ => 1) k = countValidFormulas k := by
   simp [totalWeight, validWords_eq, ← fastCountValidFormulas_eq, fastCountValidFormulas]
 
+/-- At the initial full-window length, every word is its own retained suffix,
+so the total is the sum of weights over valid `width`-rotation words. -/
 lemma totalWeight_at_width (width : ℕ) (w : List Rotation → ℕ) :
     totalWeight width w width = ((validWords width).map w).sum := by
   unfold totalWeight
@@ -88,6 +108,8 @@ lemma totalWeight_at_width (width : ℕ) (w : List Rotation → ℕ) :
     (by simpa only [validWords_eq] using hrs)
   simp [suffix, hlen]
 
+/-- For positive width and `k >= width`, forgetting older rotations can only
+increase the weighted one-step extension sum. -/
 lemma totalWeight_next_le (width : ℕ) (hw : 0 < width)
     (f : List Rotation → ℕ) (k : ℕ) (hk : width ≤ k) :
     totalWeight width f (k + 1) ≤ totalWeight width (outgoing f) k := by
@@ -99,6 +121,8 @@ lemma totalWeight_next_le (width : ℕ) (hw : 0 < width)
     (by simpa only [validWords_eq] using hrs)
   exact children_sum_le width hw f rs (by omega)
 
+/-- A scaled inequality on valid full-window states lifts to weighted totals
+over actual `k`-rotation words once the window is filled. -/
 lemma totalWeight_mono (width : ℕ) (f g : List Rotation → ℕ)
     (a b k : ℕ) (hk : width ≤ k)
     (h : ∀ rs, rs.length = width → ValidList rs → a * f rs ≤ b * g rs) :
@@ -113,6 +137,8 @@ lemma totalWeight_mono (width : ℕ) (f g : List Rotation → ℕ)
   exact h (suffix width rs) (suffix_length width rs (by omega))
     (validList_drop rs _ (validRotationLists_valid k rs hmem))
 
+/-- With a positive full window, an integer row inequality
+`b * outgoing w <= a * w` gives the same one-step inequality for actual totals. -/
 lemma totalWeight_step (width : ℕ) (hw : 0 < width)
     (w : List Rotation → ℕ) (a b k : ℕ) (hk : width ≤ k)
     (h : ∀ rs, rs.length = width → ValidList rs →
@@ -121,6 +147,8 @@ lemma totalWeight_step (width : ℕ) (hw : 0 < width)
   (Nat.mul_le_mul_left b (totalWeight_next_le width hw w k hk)).trans
     (totalWeight_mono width (outgoing w) w b a k hk h)
 
+/-- For a positive window filled by the first `k` rotations, local `t`-step
+continuation weights dominate the count of valid `(k + t)`-rotation formulas. -/
 lemma count_add_le_totalWeight (width : ℕ) (hw : 0 < width)
     (k t : ℕ) (hk : width ≤ k) :
     countValidFormulas (k + t) ≤ totalWeight width (continuations t) k := by
@@ -136,6 +164,9 @@ lemma count_add_le_totalWeight (width : ℕ) (hw : 0 < width)
         _ ≤ totalWeight width (continuations (t + 1)) k :=
           totalWeight_next_le width hw (continuations t) k hk
 
+/-- Domination of scaled terminal path counts by `w` on valid full windows
+bounds actual formula counts after the terminal rotations. The positive window
+must already be filled, but the potential may vanish at dead ends. -/
 lemma count_terminal_le (width : ℕ) (hw : 0 < width)
     (w : List Rotation → ℕ) (scale terminal k : ℕ) (hk : width ≤ k)
     (h : ∀ rs, rs.length = width → ValidList rs →
@@ -146,6 +177,9 @@ lemma count_terminal_le (width : ℕ) (hw : 0 < width)
     totalWeight_mono width (continuations terminal) w scale 1 k hk
       (by simpa only [one_mul] using h)
 
+/-- For positive width and denominator `b`, the integer row inequality yields
+geometric growth with exact ratio `a / b` from the initial full-window total;
+strict positivity of the potential is unnecessary. -/
 lemma totalWeight_bound (width : ℕ) (hw : 0 < width)
     (w : List Rotation → ℕ) (a b : ℕ) (hb : 0 < b)
     (h : ∀ rs, rs.length = width → ValidList rs →

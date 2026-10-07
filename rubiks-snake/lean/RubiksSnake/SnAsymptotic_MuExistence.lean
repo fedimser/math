@@ -20,6 +20,7 @@ namespace RubiksSnake
 
 noncomputable section
 
+/-- Truncating an enumerated valid word gives an enumerated valid prefix of the truncated length. -/
 lemma mem_validRotationLists_take {k : ℕ} {rs : List Rotation}
     (hrs : rs ∈ validRotationLists k) (m : ℕ) :
     rs.take m ∈ validRotationLists (min m k) := by
@@ -49,6 +50,7 @@ lemma mem_validRotationLists_take {k : ℕ} {rs : List Rotation}
           exact ⟨pre, hpre, r, hr, by simp [hcan]⟩
       · simp at hchild
 
+/-- A prefix of a collision-free rotation word is again valid. -/
 lemma validList_take (rs : List Rotation) (m : ℕ) (hrs : ValidList rs) :
     ValidList (rs.take m) := by
   have hmem : rs ∈ validRotationLists rs.length :=
@@ -56,6 +58,8 @@ lemma validList_take (rs : List Rotation) (m : ℕ) (hrs : ValidList rs) :
   have htake := mem_validRotationLists_take hmem m
   exact validRotationLists_valid _ _ htake
 
+/-- A suffix remains valid when interpreted in the standard initial frame; reversal reduces
+this to prefix validity. -/
 lemma validList_drop (rs : List Rotation) (m : ℕ) (hrs : ValidList rs) :
     ValidList (rs.drop m) := by
   by_cases hm : m ≤ rs.length
@@ -72,6 +76,7 @@ lemma validList_drop (rs : List Rotation) (m : ℕ) (hrs : ValidList rs) :
     rw [this]
     native_decide
 
+/-- Split a valid word of length `m + n` into separately valid prefix and suffix words. -/
 def splitValidRotationList (m n : ℕ) :
     {rs : List Rotation // rs ∈ validRotationLists (m + n)} →
       {rs : List Rotation // rs ∈ validRotationLists m} ×
@@ -86,6 +91,7 @@ def splitValidRotationList (m n : ℕ) :
           (validList_drop rs.1 m (validRotationLists_valid _ _ rs.2))
         simpa [List.length_drop, hlen] using hmem⟩⟩
 
+/-- The prefix and suffix determine the original word, giving the injection behind submultiplicativity. -/
 lemma splitValidRotationList_injective (m n : ℕ) :
     Function.Injective (splitValidRotationList m n) := by
   intro a b hab
@@ -111,6 +117,7 @@ theorem countValidFormulas_submultiplicative (m n : ℕ) :
   exact Nat.card_le_card_of_injective
     (splitValidRotationList m n) (splitValidRotationList_injective m n)
 
+/-- There is at least one valid formula at every length; the increasing construction gives `2^k`. -/
 lemma countValidFormulas_pos (k : ℕ) : 0 < countValidFormulas k := by
   have hle : 2 ^ k ≤ countValidFormulas k := by
     unfold countValidFormulas countFormulas
@@ -125,6 +132,7 @@ lemma countValidFormulas_pos (k : ℕ) : 0 < countValidFormulas k := by
 def logValidFormulaCount (k : ℕ) : ℝ :=
   Real.log (countValidFormulas k)
 
+/-- The logarithmic count is nonnegative because every integer formula count is at least one. -/
 lemma logValidFormulaCount_nonneg (k : ℕ) :
     0 ≤ logValidFormulaCount k := by
   apply Real.log_nonneg
@@ -154,6 +162,7 @@ theorem logValidFormulaCount_subadditive :
       · exact_mod_cast (countValidFormulas_pos m).ne'
       · exact_mod_cast (countValidFormulas_pos n).ne'
 
+/-- Normalized logarithmic counts are bounded below by zero, as required by Fekete's lemma. -/
 lemma logValidFormulaCount_div_bddBelow :
     BddBelow (range fun k : ℕ => logValidFormulaCount k / k) := by
   refine ⟨0, ?_⟩
@@ -164,6 +173,7 @@ lemma logValidFormulaCount_div_bddBelow :
 def snakeGrowthConstant : ℝ :=
   Real.exp logValidFormulaCount_subadditive.lim
 
+/-- Fekete's lemma identifies the limit of normalized logarithmic counts with `log mu`. -/
 lemma tendsto_logValidFormulaCount_div :
     Tendsto (fun k : ℕ => logValidFormulaCount k / k) atTop
       (𝓝 (Real.log snakeGrowthConstant)) := by
@@ -171,6 +181,7 @@ lemma tendsto_logValidFormulaCount_div :
     logValidFormulaCount_div_bddBelow
   simpa [snakeGrowthConstant] using ht
 
+/-- The chosen growth constant is strictly positive because it is the exponential of a real limit. -/
 lemma snakeGrowthConstant_pos : 0 < snakeGrowthConstant :=
   Real.exp_pos _
 
@@ -196,6 +207,8 @@ theorem snakeGrowthConstant_pow_le_countValidFormulas (k : ℕ) :
         rw [logValidFormulaCount, Real.exp_log]
         exact_mod_cast countValidFormulas_pos k
 
+/-- Any uniform exponential lower bound with a positive prefactor gives the same lower base
+for the growth constant; the prefactor disappears in normalized logarithms. -/
 theorem snakeGrowthConstant_ge_of_pointwise
     (C q : ℝ) (hC : 0 < C) (hq : 0 < q)
     (hcount : ∀ k : ℕ, C * q ^ k ≤ (countValidFormulas k : ℝ)) :
@@ -227,6 +240,7 @@ theorem snakeGrowthConstant_ge_of_pointwise
   rw [← Real.exp_log hq, ← Real.exp_log snakeGrowthConstant_pos]
   exact Real.exp_le_exp.mpr hlog
 
+/-- Exponentiating the logarithmic limit proves convergence of the `k`th roots of formula counts. -/
 lemma tendsto_countValidFormulas_rpow :
     Tendsto
       (fun k : ℕ => (countValidFormulas k : ℝ) ^ (1 / (k : ℝ)))

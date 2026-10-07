@@ -8,6 +8,7 @@ structure InvolutiveFormulaTransform (n : ℕ) where
   involutive : Function.Involutive toFun
   valid_iff : ∀ w, Valid (toFun w) ↔ Valid w
 
+/-- Use a bundled involution directly as a function on `n`-rotation formulas. -/
 instance {n : ℕ} : CoeFun (InvolutiveFormulaTransform n)
     (fun _ => Formula n → Formula n) :=
   ⟨InvolutiveFormulaTransform.toFun⟩

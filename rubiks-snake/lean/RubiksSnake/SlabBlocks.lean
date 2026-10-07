@@ -13,16 +13,21 @@ occupy successive disjoint planes.
 
 namespace RubiksSnake
 
+/-- The four transverse incoming directions `+y, +z, -y, -z`, indexed by phase. -/
 def planePrevious (i : Fin 4) : Vec3 :=
   ![ey, ez, negVec ey, negVec ez] i
 
+/-- A frame centered at `p`, facing `+x`, with transverse incoming phase `i`. -/
 def planeStart (i : Fin 4) (p : Vec3) : SlabState :=
   ⟨p, planePrevious i, ex⟩
 
+/-- Moving a plane-start frame away from the origin is a pure translation. -/
 lemma planeStart_translate (i : Fin 4) (p : Vec3) :
     planeStart i p = slabTranslate p (planeStart i zeroVec) := by
   simp [planeStart, slabTranslate]
 
+/-- In every entrance phase, the word adds disjoint wedges entirely in plane
+`x = 1` and ends there facing `+x` with a transverse incoming direction. -/
 def IsPlaneBlock (rs : List Rotation) : Prop :=
   ∀ i : Fin 4,
     let s := planeStart i zeroVec
@@ -32,10 +37,13 @@ def IsPlaneBlock (rs : List Rotation) : Prop :=
     (slabRun s rs).axis = ex ∧
     ∃ j : Fin 4, (slabRun s rs).previous = planePrevious j
 
+/-- Decide the finite plane-block geometry checks for all four phases. -/
 instance (rs : List Rotation) : Decidable (IsPlaneBlock rs) := by
   unfold IsPlaneBlock interiorDisjoint sameUnorderedPair
   infer_instance
 
+/-- A valid plane block based at `p` has disjoint fresh wedges in plane
+`x = p 0 + 1` and ends in another plane-start frame on that plane. -/
 lemma planeBlock_at {rs : List Rotation} (h : IsPlaneBlock rs)
     (i : Fin 4) (p : Vec3) :
     (slabNewWedges (planeStart i p) rs).Pairwise interiorDisjoint ∧
@@ -55,6 +63,8 @@ lemma planeBlock_at {rs : List Rotation} (h : IsPlaneBlock rs)
     rw [hprevious, haxis]
   · simp [addVec, hlast]
 
+/-- Enumerate words of the requested rotation length whose new centers lie
+in plane `x = 1` and whose final axis is `+x`, before collision filtering. -/
 def planeCandidates : SlabState → ℕ → List (List Rotation)
   | s, 0 => if s.axis = ex then [[]] else []
   | s, k + 1 =>
@@ -63,31 +73,40 @@ def planeCandidates : SlabState → ℕ → List (List Rotation)
           (planeCandidates (slabStep s r) k).map (r :: ·)
       else []
 
+/-- Selected plane-block words with two through seven rotations, accepted
+only after checking the geometry in every entrance phase. -/
 def planeCode : List (List Rotation) :=
   ((List.range 6).flatMap fun k =>
     planeCandidates (planeStart 0 zeroVec) (k + 2)).filter
     (fun rs => decide (IsPlaneBlock rs))
 
+/-- Selected plane blocks having exactly `k` rotations. -/
 def planeBlocks (k : ℕ) : List (List Rotation) :=
   planeCode.filter (fun rs => rs.length == k)
 
+/-- Every selected codeword satisfies the phase-uniform plane-block conditions. -/
 lemma planeCode_valid {rs : List Rotation} (h : rs ∈ planeCode) :
     IsPlaneBlock rs := by
   exact of_decide_eq_true (List.mem_filter.mp h).2
 
+/-- The finite plane-block enumeration has no repeated rotation words. -/
 lemma planeCode_nodup : planeCode.Nodup := by native_decide
 
+/-- Selected plane blocks have rotation lengths between two and seven. -/
 lemma planeCode_lengths : ∀ rs ∈ planeCode, 2 ≤ rs.length ∧ rs.length ≤ 7 := by
   native_decide
 
+/-- No selected plane codeword is a proper prefix of another selected word. -/
 lemma planeCode_prefix_free :
     ∀ a ∈ planeCode, ∀ b ∈ planeCode, a <+: b → a = b := by
   native_decide
 
+/-- A length-class member is exactly a selected codeword with `k` rotations. -/
 lemma mem_planeBlocks {k : ℕ} {rs : List Rotation} :
     rs ∈ planeBlocks k ↔ rs ∈ planeCode ∧ rs.length = k := by
   simp [planeBlocks]
 
+/-- The code list is ordered as its six rotation-length classes, two through seven. -/
 lemma planeCode_by_length :
     planeCode = planeBlocks 2 ++ planeBlocks 3 ++ planeBlocks 4 ++
       planeBlocks 5 ++ planeBlocks 6 ++ planeBlocks 7 := by
@@ -103,10 +122,13 @@ def planeBlockCount : ℕ → ℕ
   | 7 => 72
   | _ => 0
 
+/-- The six declared block counts equal the actual length-class cardinalities. -/
 lemma planeBlocks_counts :
     ∀ j : Fin 6, (planeBlocks (j.val + 2)).length = planeBlockCount (j.val + 2) := by
   native_decide
 
+/-- Enumerate concatenations of selected plane blocks with a total of `n`
+rotations, using the empty concatenation at length zero. -/
 def planeLanguage (n : ℕ) : List (List Rotation) :=
   if n = 0 then [[]]
   else planeCode.flatMap fun b =>
@@ -116,10 +138,12 @@ def planeLanguage (n : ℕ) : List (List Rotation) :=
 termination_by n
 decreasing_by all_goals omega
 
+/-- There is exactly one zero-rotation plane-block concatenation. -/
 lemma planeLanguage_zero : planeLanguage 0 = [[]] := by
   rw [planeLanguage]
   simp
 
+/-- Every word in the length-`n` language has exactly `n` rotations. -/
 lemma planeLanguage_word_length (n : ℕ) :
     ∀ rs ∈ planeLanguage n, rs.length = n := by
   induction n using Nat.strong_induction_on with
@@ -137,6 +161,8 @@ lemma planeLanguage_word_length (n : ℕ) :
           omega
         · simp at hb
 
+/-- In any prefix-free code, equality of two block-plus-tail words determines
+both the first block and the remaining tail uniquely. -/
 lemma prefixCode_append_injective {α : Type*} (code : List (List α))
     (hprefix : ∀ a ∈ code, ∀ b ∈ code, a <+: b → a = b)
     {a b x y : List α}
@@ -150,11 +176,14 @@ lemma prefixCode_append_injective {α : Type*} (code : List (List α))
   subst b
   exact ⟨rfl, List.append_cancel_left h⟩
 
+/-- The selected plane code uniquely determines the first block and tail
+of a concatenation. -/
 lemma planeCode_append_injective {a b x y : List Rotation}
     (ha : a ∈ planeCode) (hb : b ∈ planeCode) (h : a ++ x = b ++ y) :
     a = b ∧ x = y :=
   prefixCode_append_injective planeCode planeCode_prefix_free ha hb h
 
+/-- Prefix-free decoding ensures each concatenated rotation word is listed once. -/
 lemma planeLanguage_nodup (n : ℕ) : (planeLanguage n).Nodup := by
   induction n using Nat.strong_induction_on with
   | h n ih =>
@@ -178,6 +207,8 @@ lemma planeLanguage_nodup (n : ℕ) : (planeLanguage n).Nodup := by
           obtain ⟨y, _, hy⟩ := List.mem_map.mp hwb
           exact hne (planeCode_append_injective ha hb (hx.trans hy.symm)).1
 
+/-- From any phase and center `p`, concatenated plane blocks have disjoint
+fresh wedges whose centers all lie strictly beyond the starting `x`-plane. -/
 lemma planeLanguage_geometry (n : ℕ) :
     ∀ rs ∈ planeLanguage n, ∀ (i : Fin 4) (p : Vec3),
       (slabNewWedges (planeStart i p) rs).Pairwise interiorDisjoint ∧
@@ -215,6 +246,8 @@ lemma planeLanguage_geometry (n : ℕ) :
               omega
         · simp at hmem
 
+/-- Adding the starting wedge to a plane-block concatenation gives a valid
+formula with `n` rotations and `n + 1` wedges. -/
 lemma planeLanguage_valid (n : ℕ) (rs : List Rotation) (hrs : rs ∈ planeLanguage n) :
     ValidList rs := by
   obtain ⟨hvalid, hpos⟩ := planeLanguage_geometry n rs hrs 0 zeroVec
@@ -230,6 +263,7 @@ lemma planeLanguage_valid (n : ℕ) (rs : List Rotation) (hrs : rs ∈ planeLang
   change 0 < w.center 0 at hx
   omega
 
+/-- Distinct plane-block concatenations undercount all valid `n`-rotation formulas. -/
 theorem planeLanguage_length_le (n : ℕ) :
     (planeLanguage n).length ≤ countValidFormulas n := by
   have hsub : (planeLanguage n).toFinset ⊆ (validRotationLists n).toFinset := by
@@ -246,6 +280,8 @@ theorem planeLanguage_length_le (n : ℕ) :
       List.toFinset_card_of_nodup (validRotationLists_nodup n)
     _ = countValidFormulas n := fastCountValidFormulas_eq n
 
+/-- First blocks of positive length `j` contribute the product of the block
+count and the length-`n - j` tail count, or zero when `j > n`. -/
 private lemma planeLanguage_choices_length (n j : ℕ) (hj : 0 < j) :
     ((planeBlocks j).flatMap fun b =>
       if 0 < b.length ∧ b.length ≤ n then
@@ -265,6 +301,8 @@ private lemma planeLanguage_choices_length (n j : ℕ) (hj : 0 < j) :
   rw [heq]
   split_ifs <;> simp [List.length_flatMap]
 
+/-- For positive `n`, the plane language obeys the renewal recurrence with
+the six exact block counts at rotation lengths two through seven. -/
 lemma planeLanguage_length_rec (n : ℕ) (hn : n ≠ 0) :
     (planeLanguage n).length =
       (if 2 ≤ n then 4 * (planeLanguage (n - 2)).length else 0) +

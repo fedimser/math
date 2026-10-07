@@ -13,6 +13,7 @@ open Filter Topology
 
 namespace RubiksSnake.FinalResults
 
+/-- The root growth rate of valid rotation-word counts converges to a positive real number. -/
 theorem mu_exists :
     ∃ μ : ℝ, 0 < μ ∧
       Tendsto
@@ -20,22 +21,26 @@ theorem mu_exists :
         atTop (𝓝 μ) :=
   SnAsymptotic_MuExistence
 
-theorem mu_lower_bound : (3.193 : ℝ) ≤ snakeGrowthConstant := by
-  convert snakeGrowthConstant_ge_3193_div_1000 using 1
+/-- The certified irreducible-slab construction gives the exact decimal lower bound on `mu`. -/
+theorem mu_lower_bound : (3.400034903 : ℝ) ≤ snakeGrowthConstant := by
+  convert snakeGrowthConstant_ge_3400034903_div_1000000000 using 1
   norm_num
 
-theorem mu_upper_bound : snakeGrowthConstant ≤ (3.675 : ℝ) := by
-  convert snakeGrowthConstant_le_147_div_40 using 1
+/-- The length-sixteen collision-prefix certificate bounds `mu` by this exact decimal. -/
+theorem mu_upper_bound : snakeGrowthConstant ≤ (3.661786723 : ℝ) := by
+  convert snakeGrowthConstant_le_3661786723_div_1000000000 using 1
   norm_num
 
+/-- Every positive wedge length has the certified lower base, with prefactor one. -/
 theorem Sn_lower_bound (n : ℕ+) :
-    (3.193 : ℝ) ^ ((n : ℕ) - 1) ≤ (S n : ℝ) := by
-  convert Sn_lower_bound_3193_div_1000 n using 1
+    (3.400034903 : ℝ) ^ ((n : ℕ) - 1) ≤ (S n : ℝ) := by
+  convert Sn_lower_bound_3400034903_div_1000000000 n using 1
   norm_num
 
+/-- Every positive wedge length has the certified upper base and uniform prefactor three. -/
 theorem Sn_upper_bound (n : ℕ+) :
-    (S n : ℝ) ≤ 4.5 * (3.675 : ℝ) ^ ((n : ℕ) - 1) := by
-  convert Sn_upper_bound_147_div_40 n using 1
+    (S n : ℝ) ≤ 3 * (3.661786723 : ℝ) ^ ((n : ℕ) - 1) := by
+  convert Sn_upper_bound_3661786723_div_1000000000 n using 1
   norm_num
 
 end RubiksSnake.FinalResults

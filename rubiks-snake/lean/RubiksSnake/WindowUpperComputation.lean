@@ -1,4 +1,5 @@
 import RubiksSnake.SmallCounts
+import RubiksSnake.PrefixAutomatonData
 
 /-!
 # Executable geometry for small upper-bound certificates
@@ -11,26 +12,12 @@ checker does not introduce a separate notion of snake validity.
 namespace RubiksSnake
 namespace WindowComputation
 
-abbrev Coord := ℤ × ℤ × ℤ
-
+/-- Converts an integer triple into the function-valued vector used by the
+original geometric definitions. -/
 def vec (p : Coord) : Vec3 := ![p.1, p.2.1, p.2.2]
 
-def neg (p : Coord) : Coord := (-p.1, -p.2.1, -p.2.2)
-
-def add (p q : Coord) : Coord := (p.1 + q.1, p.2.1 + q.2.1, p.2.2 + q.2.2)
-
-def crossCoord (p q : Coord) : Coord :=
-  (p.2.1 * q.2.2 - p.2.2 * q.2.1,
-   p.2.2 * q.1 - p.1 * q.2.2,
-   p.1 * q.2.1 - p.2.1 * q.1)
-
-def turn (axis : Coord) (r : Rotation) (previous : Coord) : Coord :=
-  match r.val with
-  | 0 => previous
-  | 1 => crossCoord axis previous
-  | 2 => neg previous
-  | _ => neg (crossCoord axis previous)
-
+/-- Conversion to function-valued vectors loses no coordinate information,
+allowing equality tests to transfer between representations. -/
 lemma vec_injective : Function.Injective vec := by
   rintro ⟨x, y, z⟩ ⟨x', y', z'⟩ h
   have hx := congrFun h 0
@@ -38,50 +25,40 @@ lemma vec_injective : Function.Injective vec := by
   have hz := congrFun h 2
   simpa [vec, Prod.mk.injEq] using And.intro hx (And.intro hy hz)
 
+/-- Reversing a compact direction agrees exactly with negation in the original geometry. -/
 @[simp] lemma vec_neg (p : Coord) : vec (neg p) = negVec (vec p) := by
   funext i
   fin_cases i <;> rfl
 
+/-- Advancing a compact center by a direction agrees with vector addition. -/
 @[simp] lemma vec_add (p q : Coord) : vec (add p q) = addVec (vec p) (vec q) := by
   funext i
   fin_cases i <;> rfl
 
+/-- The compact integer cross product agrees with the original vector cross product. -/
 @[simp] lemma vec_cross (p q : Coord) :
     vec (crossCoord p q) = cross (vec p) (vec q) := rfl
 
+/-- Every compact turn agrees with the original quarter-turn rule, without
+requiring extra hypotheses on the input triples. -/
 @[simp] lemma vec_turn (axis : Coord) (r : Rotation) (previous : Coord) :
     vec (turn axis r previous) = rotateQuarter (vec axis) r (vec previous) := by
   fin_cases r <;> simp [turn, rotateQuarter]
 
-structure CompactWedge where
-  center : Coord
-  entrance : Coord
-  exit : Coord
-deriving DecidableEq
-
+/-- Views a compact wedge as an original wedge by converting its center and
+entrance/exit directions coordinatewise. -/
 def CompactWedge.toWedge (w : CompactWedge) : Wedge :=
   ⟨vec w.center, vec w.entrance, vec w.exit⟩
 
-def disjoint (a b : CompactWedge) : Prop :=
-  a.center ≠ b.center ∨
-    (a.entrance = neg b.entrance ∧ a.exit = neg b.exit) ∨
-    (a.entrance = neg b.exit ∧ a.exit = neg b.entrance)
-
-instance (a b : CompactWedge) : Decidable (disjoint a b) := by
-  unfold disjoint
-  infer_instance
-
+/-- The compact disjointness predicate is exactly the original interior-disjointness
+predicate after conversion, not an approximation to it. -/
 lemma disjoint_iff (a b : CompactWedge) :
     disjoint a b ↔ interiorDisjoint a.toWedge b.toWedge := by
   simp only [disjoint, interiorDisjoint, sameUnorderedPair, CompactWedge.toWedge,
     ← vec_neg, ne_eq, vec_injective.eq_iff]
 
-def path (center incoming outgoing : Coord) : List Rotation → List CompactWedge
-  | [] => [⟨center, neg incoming, outgoing⟩]
-  | r :: rs =>
-      ⟨center, neg incoming, outgoing⟩ ::
-        path (add center outgoing) outgoing (turn outgoing r incoming) rs
-
+/-- Compact path construction yields the same wedge list as the original frame
+recursion, for any starting center, frame, and rotation word. -/
 lemma path_map (center incoming outgoing : Coord) (rs : List Rotation) :
     (path center incoming outgoing rs).map CompactWedge.toWedge =
       wedgePath (vec center) (vec incoming) (vec outgoing)
@@ -91,9 +68,8 @@ lemma path_map (center incoming outgoing : Coord) (rs : List Rotation) :
   | cons r rs ih =>
       simp [path, wedgePath, directionTail, CompactWedge.toWedge, ih]
 
-def compactWedges (rs : List Rotation) : List CompactWedge :=
-  path (0, 0, 0) (0, 1, 0) (1, 0, 0) rs
-
+/-- The canonical compact realization converts to exactly the original wedge
+list, with one more wedge than rotations. -/
 lemma compactWedges_map (rs : List Rotation) :
     (compactWedges rs).map CompactWedge.toWedge = wedges rs := by
   rw [compactWedges, path_map]
@@ -107,25 +83,30 @@ lemma compactWedges_map (rs : List Rotation) :
   simp only [List.drop_succ_cons, List.drop_zero, List.tail_cons, List.zip_cons_cons]
   exact wedgesFromDirections_eq_wedgePath _ _ _ _
 
-def valid (rs : List Rotation) : Bool :=
-  decide ((compactWedges rs).Pairwise disjoint)
-
+/-- The executable compact checker accepts exactly the geometrically valid
+rotation words, justifying its use in finite certificates. -/
 lemma valid_iff (rs : List Rotation) : valid rs = true ↔ ValidList rs := by
   rw [valid, decide_eq_true_eq]
   change _ ↔ (wedges rs).Pairwise interiorDisjoint
   rw [← compactWedges_map, List.pairwise_map]
   simp only [← disjoint_iff]
 
-def rotations : List Rotation := [0, 1, 2, 3]
-
+/-- Drops the oldest rotation and appends a new one; this preserves a nonempty
+window's length and performs no validity check by itself. -/
 def next (rs : List Rotation) (r : Rotation) : List Rotation :=
   rs.tail ++ [r]
 
+/-- Sum of successor weights for extensions passing the compact check on
+`rs ++ [r]`; the destination retains only the shifted window. -/
 def outgoing (w : List Rotation → ℕ) (rs : List Rotation) : ℕ :=
   (rotations.map fun r => if valid (rs ++ [r]) then w (next rs r) else 0).sum
 
+/-- Number of accepted one-rotation window extensions, counting rotation labels
+rather than distinct destination states. -/
 def degree (rs : List Rotation) : ℕ := outgoing (fun _ => 1) rs
 
+/-- On an already valid word, checking the whole extended compact path is
+equivalent to checking the newly appended wedge against the existing wedges. -/
 lemma valid_append_eq_canAppend (rs : List Rotation) (r : Rotation)
     (hvalid : ValidList rs) : valid (rs ++ [r]) = canAppend rs r := by
   apply Bool.eq_iff_iff.mpr
@@ -134,6 +115,8 @@ lemma valid_append_eq_canAppend (rs : List Rotation) (r : Rotation)
   rw [collisionFree_append_iff]
   exact and_iff_right hvalid
 
+/-- For a valid source word, compact outgoing weights coincide with the
+original `canAppend`-based weighted transition sum. -/
 lemma outgoing_eq_canAppend (w : List Rotation → ℕ) (rs : List Rotation)
     (hvalid : ValidList rs) :
     outgoing w rs =
@@ -141,14 +124,20 @@ lemma outgoing_eq_canAppend (w : List Rotation → ℕ) (rs : List Rotation)
   unfold outgoing
   simp_rw [valid_append_eq_canAppend rs _ hvalid]
 
+/-- All valid one-rotation extensions of the entire word, without discarding
+older rotations as a window transition would. -/
 def children (rs : List Rotation) : List (List Rotation) :=
   rotations.filterMap fun r =>
     if valid (rs ++ [r]) then some (rs ++ [r]) else none
 
+/-- Enumerates globally valid words with the requested number of rotations
+by extending the full prefix tree; length `n` corresponds to `n + 1` wedges. -/
 def validWords : ℕ → List (List Rotation)
   | 0 => [[]]
   | n + 1 => (validWords n).flatMap children
 
+/-- The compact prefix-tree enumeration is exactly the existing list of valid
+`n`-rotation formulas, including its ordering. -/
 lemma validWords_eq (n : ℕ) : validWords n = validRotationLists n := by
   induction n with
   | zero => rfl
@@ -176,19 +165,28 @@ lemma validWords_eq (n : ℕ) : validWords n = validRotationLists n := by
             rw [valid_append_eq_canAppend rs r (hvalid rs (by simp))]
           · exact ih (fun s hs => hvalid s (by simp [hs]))
 
+/-- Big-endian base-four index for a fixed-width rotation word; unlike sentinel
+prefix keys, this encoding does not record the word's length. -/
 def encode (rs : List Rotation) : ℕ :=
   rs.foldl (fun i r => 4 * i + r.val) 0
 
+/-- The `width` base-four digits of an in-range index, including leading zeros,
+listed in rotation order. -/
 def decode (width : ℕ) (i : Fin (4 ^ width)) : List Rotation :=
   List.ofFn fun j : Fin width =>
     (⟨(i.val / 4 ^ (width - 1 - j.val)) % 4, Nat.mod_lt _ (by decide)⟩ : Rotation)
 
+/-- Transition rows for all `4^width` encoded windows, accepting an edge only
+when the full one-rotation extension is valid. For positive width, destinations
+are indices of shifted windows of the same width. -/
 def edges (width : ℕ) : Array (List ℕ) :=
   Array.ofFn fun i : Fin (4 ^ width) =>
     let rs := decode width i
     rotations.filterMap fun r =>
       if valid (rs ++ [r]) then some (encode (next rs r)) else none
 
+/-- Exact adjacency iterates starting from all ones; on a well-indexed graph,
+entries count paths of the requested length, not globally valid formulas. -/
 def iterateWeights (graph : Array (List ℕ)) : ℕ → Array ℕ
   | 0 => Array.replicate graph.size 1
   | n + 1 =>

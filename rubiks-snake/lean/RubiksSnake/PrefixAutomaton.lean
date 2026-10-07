@@ -17,12 +17,18 @@ namespace PrefixAutomaton
 
 open WindowComputation
 
+/-- Finite set of rotation words used as suffix states. Empty-state membership
+and prefix closure are hypotheses of the counting lemmas, not invariants of this type. -/
 abbrev Dictionary := Std.HashSet (List Rotation)
 
+/-- Longest suffix present in the dictionary, falling back to the empty word
+even when the dictionary does not contain it. -/
 def longest (dictionary : Dictionary) : List Rotation → List Rotation
   | [] => []
   | r :: rs => if dictionary.contains (r :: rs) then r :: rs else longest dictionary rs
 
+/-- The retained state is always a suffix of the input, including the empty
+fallback, without any dictionary assumptions. -/
 lemma longest_suffix (dictionary : Dictionary) (rs : List Rotation) :
     longest dictionary rs <:+ rs := by
   induction rs with
@@ -33,6 +39,8 @@ lemma longest_suffix (dictionary : Dictionary) (rs : List Rotation) :
       · exact List.suffix_refl _
       · exact ih.trans (List.suffix_cons r rs)
 
+/-- If the dictionary contains the empty root, suffix lookup always returns
+a dictionary state. -/
 lemma longest_mem (dictionary : Dictionary) (hzero : [] ∈ dictionary) (rs : List Rotation) :
     longest dictionary rs ∈ dictionary := by
   induction rs with
@@ -44,6 +52,8 @@ lemma longest_mem (dictionary : Dictionary) (hzero : [] ∈ dictionary) (rs : Li
         exact (Std.HashSet.contains_iff_mem).mp h
       · exact ih
 
+/-- Every dictionary suffix of a word is itself a suffix of the retained state,
+expressing maximality without assuming prefix closure. -/
 lemma longest_covers (dictionary : Dictionary) {rs q : List Rotation}
     (hq : q ∈ dictionary) (hs : q <:+ rs) :
     q <:+ longest dictionary rs := by
@@ -62,10 +72,15 @@ lemma longest_covers (dictionary : Dictionary) {rs q : List Rotation}
           exact False.elim (hnot ((Std.HashSet.contains_iff_mem).mpr hq))
         · exact ih hs
 
+/-- Appending the same rotation preserves the suffix relation, so a retained
+state extends to a suffix of the extended word. -/
 lemma suffix_append_singleton {a b : List Rotation} (h : a <:+ b) (r : Rotation) :
     a ++ [r] <:+ b ++ [r] :=
   (List.suffix_append_self_iff).mpr h
 
+/-- For a dictionary containing the empty word and closed under deleting the
+last rotation, the next retained state depends only on the current state and
+the appended rotation. -/
 lemma longest_append (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)
@@ -93,22 +108,33 @@ lemma longest_append (dictionary : Dictionary)
       exact suffix_append_singleton (longest_covers dictionary hpre_mem hpre) r
   exact hlong.sublist.antisymm hshort.sublist
 
+/-- Sums destination weights over one-rotation extensions valid for the current
+suffix state, then retains the longest dictionary suffix. Collisions with
+discarded history are not tested. -/
 def outgoing (dictionary : Dictionary) (f : List Rotation → ℕ) (rs : List Rotation) : ℕ :=
   (rotations.map fun r =>
     if valid (rs ++ [r]) then f (longest dictionary (rs ++ [r])) else 0).sum
 
+/-- Counts paths accepted by the suffix-state transition rule, starting with one
+empty path; these are not necessarily globally valid snake continuations. -/
 def continuations (dictionary : Dictionary) : ℕ → List Rotation → ℕ
   | 0 => fun _ => 1
   | t + 1 => outgoing dictionary (continuations dictionary t)
 
+/-- Sums retained-state weights over actual valid words with `k` rotations
+(`k + 1` wedges), counting each word even when several share the same state. -/
 def totalWeight (dictionary : Dictionary) (f : List Rotation → ℕ) (k : ℕ) : ℕ :=
   ((validWords k).map fun rs => f (longest dictionary rs)).sum
 
+/-- Every suffix of a geometrically valid word is valid, allowing a full path
+to be checked through its retained suffix. -/
 private lemma valid_suffix {rs q : List Rotation} (hs : q <:+ rs) (hv : ValidList rs) :
     ValidList q := by
   obtain ⟨pre, rfl⟩ := hs
   simpa using validList_drop (pre ++ q) pre.length hv
 
+/-- With an empty root and prefix-closed dictionary, the weighted sum of actual
+one-rotation extensions is at most the suffix automaton's outgoing total. -/
 lemma totalWeight_next_le (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)
@@ -128,10 +154,14 @@ lemma totalWeight_next_le (dictionary : Dictionary)
     rw [if_pos hvalid, if_pos hshort, longest_append dictionary hzero hclosed]
   · simp [hvalid]
 
+/-- Unit weights recover the number of actual valid `k`-rotation formulas,
+not the number of dictionary states they visit. -/
 lemma totalWeight_one (dictionary : Dictionary) (k : ℕ) :
     totalWeight dictionary (fun _ => 1) k = countValidFormulas k := by
   simp [totalWeight, validWords_eq, ← fastCountValidFormulas_eq, fastCountValidFormulas]
 
+/-- A scaled weight comparison on valid dictionary states lifts to totals over
+actual words, provided the empty root belongs to the dictionary. -/
 lemma totalWeight_mono (dictionary : Dictionary) (hzero : [] ∈ dictionary)
     (f g : List Rotation → ℕ) (a b k : ℕ)
     (h : ∀ rs ∈ dictionary, ValidList rs → a * f rs ≤ b * g rs) :
@@ -144,6 +174,9 @@ lemma totalWeight_mono (dictionary : Dictionary) (hzero : [] ∈ dictionary)
     validRotationLists_valid k rs (by simpa only [validWords_eq] using hrs)
   exact h _ (longest_mem dictionary hzero rs) (valid_suffix (longest_suffix dictionary rs) hv)
 
+/-- For a prefix-closed dictionary containing the empty word, local terminal
+path counts summed over valid prefixes bound the count of formulas with
+`k + terminal` rotations. -/
 lemma count_terminal_le (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)
@@ -160,6 +193,9 @@ lemma count_terminal_le (dictionary : Dictionary)
         _ ≤ totalWeight dictionary (continuations dictionary (terminal + 1)) k :=
           totalWeight_next_le dictionary hzero hclosed _ k
 
+/-- On a prefix-closed dictionary containing the empty word, any terminal weight
+family starting at least at one and dominating each outgoing step bounds actual
+formula counts. Its inequalities are needed only on valid dictionary states. -/
 lemma count_terminal_family_le (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)
@@ -191,6 +227,9 @@ lemma count_terminal_family_le (dictionary : Dictionary)
                 1 1 k (by simpa using hstep t (by omega))
   exact hgeneral terminal le_rfl k
 
+/-- With an empty root, prefix closure, and positive `b`, an integer outgoing
+inequality bounds weighted totals by `w [] * (a / b)^k`. Zero state weights
+are allowed. -/
 lemma totalWeight_bound (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)
@@ -217,6 +256,10 @@ lemma totalWeight_bound (dictionary : Dictionary)
           mul_le_mul_of_nonneg_left ih (by positivity)
         _ = w [] * ((a : ℝ) / b) ^ (k + 1) := by rw [pow_succ]; ring
 
+/-- Converts exact transition and terminal inequalities into a pointwise formula
+bound for a prefix-closed dictionary containing the empty word, with positive
+`b` and `scale`. The root-weight hypothesis absorbs the terminal steps into
+prefactor `C`; the result counts `terminal + k` rotations, not dictionary states. -/
 theorem count_bound_of_certificate (dictionary : Dictionary)
     (hzero : [] ∈ dictionary)
     (hclosed : ∀ rs ∈ dictionary, rs.dropLast ∈ dictionary)

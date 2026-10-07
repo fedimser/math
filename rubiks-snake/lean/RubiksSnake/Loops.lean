@@ -10,10 +10,9 @@ namespace RubiksSnake
 def loopFrmToFrm {n : ℕ+} (w : Formula n) : Formula (n - 1) :=
   fun i => w (Fin.castLE (Nat.sub_le n 1) i)
 
-/--
- Checks whether Formula of length n describes an n-wedge loop.
- Does not check that formula is valid (e.g. collision free).
--/
+/-- Closure test for `n` joint rotations: the extra terminal wedge returns to
+the origin with the initial directions. The loop has `n` wedges before this
+repetition; collision freedom is not checked. -/
 def isLoop {n : ℕ} (w : Formula n) : Prop :=
   let ds := directions (List.ofFn w)
   (centersFromDirections ds).getLastD zeroVec = zeroVec ∧
@@ -28,6 +27,8 @@ structure LoopFormula (n : ℕ+) where
   f : Formula n
   validLoop: isValidLoop f
 
+/-- Open an `n`-wedge loop at its chosen cut by omitting the closing rotation,
+obtaining an `(n - 1)`-rotation formula with exactly `n` wedges. -/
 def toShapeFormula {n : ℕ+}: LoopFormula n → Formula (n-1) :=
   fun lf => loopFrmToFrm lf.f
 
@@ -45,11 +46,14 @@ structure LoopTransform (n : ℕ+) where
   t: Formula n → Formula n
   preservesValidLoop: ∀ w, isValidLoop w → isValidLoop (t w)
 
+/-- Change a loop's chosen cut by reading entry `i + k` modulo `n`.
+Positive shifts move leading rotations to the end; negative shifts move backwards. -/
 def shiftLoopFormula {n : ℕ} (k : ℤ) (w : Formula n) : Formula n :=
   fun i =>
     w ⟨Int.natMod ((i.1 : ℤ) + k) n,
       Int.natMod_lt (Nat.ne_of_gt (Nat.zero_lt_of_lt i.2))⟩
 
+/-- Opening a loop formula corresponds to deleting the last entry of its rotation list. -/
 lemma ofFn_loopFrmToFrm {n : ℕ+} (w : Formula n) :
     List.ofFn (loopFrmToFrm w) = (List.ofFn w).dropLast := by
   apply List.ext_get
@@ -59,6 +63,8 @@ lemma ofFn_loopFrmToFrm {n : ℕ+} (w : Formula n) :
       loopFrmToFrm]
     rfl
 
+/-- An integer shift of formula indices is a left rotation of the rotation list,
+with the shift reduced modulo the number of joints. -/
 lemma ofFn_shiftLoopFormula {n : ℕ} (k : ℤ) (w : Formula n) :
     List.ofFn (shiftLoopFormula k w) =
       (List.ofFn w).rotate (Int.natMod k n) := by
@@ -78,6 +84,8 @@ lemma ofFn_shiftLoopFormula {n : ℕ} (k : ℤ) (w : Formula n) :
       Int.toNat_of_nonneg (Int.emod_nonneg _ hn)]
     exact (Int.add_emod_emod _ _ _).symm
 
+/-- The last two travel directions, read backwards, are the terminal frame's
+images of `ex` and `ey`. -/
 private lemma directionsFrom_terminalFrame (e : RigidVecEquiv)
     (rs : List Rotation) :
     (directionsFrom (e ey) (e ex) rs).reverse.take 2 =
@@ -89,6 +97,7 @@ private lemma directionsFrom_terminalFrame (e : RigidVecEquiv)
         List.take_append_of_le_length (by simp [directionsFrom])]
       exact ih (advanceFrame e r)
 
+/-- A list ending in the reverse-read pair `[b, a]` has a prefix followed by `[a, b]`. -/
 private lemma eq_append_of_reverse_take_two {α : Type} (ds : List α) (a b : α)
     (h : ds.reverse.take 2 = [b, a]) :
     ∃ pre, ds = pre ++ [a, b] := by
@@ -97,16 +106,23 @@ private lemma eq_append_of_reverse_take_two {α : Type} (ds : List α) (a b : α
   rw [h] at heq
   simpa using heq.symm
 
+/-- List-based loop validity: the complete word closes in position and frame,
+while collision freedom is tested without the final rotation that repeats
+the initial wedge. -/
 private def ValidLoopList (rs : List Rotation) : Prop :=
   ValidList rs.dropLast ∧
     (centersFromDirections (directions rs)).getLastD zeroVec = zeroVec ∧
     (directions rs).reverse.take 2 = [ex, ey]
 
+/-- Indexed validity for an `n`-wedge loop agrees with the list-based closure
+and collision conditions on its `n` rotations. -/
 private lemma isValidLoop_iff_list {n : ℕ+} (w : Formula n) :
     isValidLoop w ↔ ValidLoopList (List.ofFn w) := by
   unfold isValidLoop Valid ValidLoopList isLoop
   rw [ofFn_loopFrmToFrm]
 
+/-- Moving the first rotation to the end changes only the cut of a valid loop,
+preserving closure and disjointness of its nonrepeated wedges. -/
 private lemma validLoopList_rotate_one (r : Rotation) (rs : List Rotation)
     (h : ValidLoopList (r :: rs)) : ValidLoopList (rs ++ [r]) := by
   let e := advanceFrame RigidVecEquiv.refl r
@@ -207,6 +223,7 @@ private lemma validLoopList_rotate_one (r : Rotation) (rs : List Rotation)
     rw [List.map_take, List.map_reverse, hshift, hpre]
     simp [hey]
 
+/-- Any natural-number cyclic shift preserves the list-based valid-loop conditions. -/
 private lemma validLoopList_rotate (rs : List Rotation) (m : ℕ)
     (h : ValidLoopList rs) : ValidLoopList (rs.rotate m) := by
   induction m generalizing rs with
@@ -226,24 +243,32 @@ lemma shiftPreservesValidLoop (n: ℕ+) (k: ℤ) (w: Formula n):
   rw [ofFn_shiftLoopFormula]
   exact validLoopList_rotate _ _ h
 
+/-- A change of cut by any integer number of joints, bundled as a validity-preserving
+transform of `n`-wedge loops. -/
 def shiftTransform (n : ℕ+) (k : ℤ) : LoopTransform n where
   t := shiftLoopFormula k
   preservesValidLoop := shiftPreservesValidLoop n k
 
 
 
+/-- Membership among the six signed coordinate unit directions of the cubic lattice. -/
 private def SignedAxis (v : Vec3) : Prop :=
   v = ex ∨ v = negVec ex ∨ v = ey ∨ v = negVec ey ∨
     v = ez ∨ v = negVec ez
 
+/-- Two signed coordinate directions on different axes, hence perpendicular,
+forming an admissible pair of successive travel directions. -/
 private def AxisFrame (previous axis : Vec3) : Prop :=
   SignedAxis previous ∧ SignedAxis axis ∧
     previous ≠ axis ∧ previous ≠ negVec axis
 
+/-- The canonical starting directions form a perpendicular cardinal frame. -/
 private lemma initial_axisFrame : AxisFrame ey ex := by
   unfold AxisFrame SignedAxis
   native_decide
 
+/-- Every joint setting advances a perpendicular cardinal frame to another
+perpendicular cardinal frame. -/
 private lemma axisFrame_step (previous axis : Vec3) (r : Rotation)
     (h : AxisFrame previous axis) :
     AxisFrame axis (rotateQuarter axis r previous) := by
@@ -253,6 +278,8 @@ private lemma axisFrame_step (previous axis : Vec3) (r : Rotation)
     simp_all [AxisFrame, SignedAxis, rotateQuarter, cross, negVec, ex, ey, ez]
   all_goals native_decide
 
+/-- From an admissible cardinal frame, every generated travel direction remains
+a signed coordinate unit vector. -/
 private lemma directionTail_signedAxis (previous axis : Vec3)
     (rs : List Rotation) (h : AxisFrame previous axis) :
     ∀ v ∈ directionTail previous axis rs, SignedAxis v := by
@@ -266,6 +293,8 @@ private lemma directionTail_signedAxis (previous axis : Vec3)
       · exact hstep.2.1
       · exact ih axis (rotateQuarter axis r previous) hstep v hv
 
+/-- All travel directions of a canonically embedded rotation word are cardinal
+unit directions, regardless of whether the word is collision-free. -/
 private lemma directions_signedAxis (rs : List Rotation) :
     ∀ v ∈ directions rs, SignedAxis v := by
   intro v hv
@@ -275,19 +304,24 @@ private lemma directions_signedAxis (rs : List Rotation) :
   · simp [SignedAxis]
   · exact directionTail_signedAxis ey ex rs initial_axisFrame v hv
 
+/-- Parity of the sum of lattice coordinates, giving the two checkerboard colors. -/
 private def checkerColor (v : Vec3) : ZMod 2 :=
   v 0 + v 1 + v 2
 
+/-- Every signed coordinate unit step has odd coordinate sum and flips checkerboard color. -/
 private lemma signedAxis_checkerColor {v : Vec3} (h : SignedAxis v) :
     checkerColor v = 1 := by
   rcases h with rfl | rfl | rfl | rfl | rfl | rfl <;>
     native_decide
 
+/-- The checkerboard color of a vector sum is the sum of the two colors modulo two. -/
 private lemma checkerColor_addVec (u v : Vec3) :
     checkerColor (addVec u v) = checkerColor u + checkerColor v := by
   simp [checkerColor, addVec]
   ring
 
+/-- Following cardinal unit steps changes checkerboard color by the parity of
+the number of steps, independently of their signs and axes. -/
 private lemma checkerColor_foldl (vs : List Vec3) (initial : Vec3)
     (h : ∀ v ∈ vs, SignedAxis v) :
     checkerColor (vs.foldl addVec initial) =
@@ -303,6 +337,8 @@ private lemma checkerColor_foldl (vs : List Vec3) (initial : Vec3)
       simp only [List.length_cons, Nat.cast_add, Nat.cast_one]
       ring
 
+/-- The last accumulated position is the endpoint of the step fold; the default
+is irrelevant because the position list always includes the initial point. -/
 private lemma scanl_getLastD (vs : List Vec3) (initial default : Vec3) :
     (vs.scanl addVec initial).getLastD default = vs.foldl addVec initial := by
   induction vs generalizing initial default with
@@ -345,14 +381,15 @@ lemma noOddLoops (n : ℕ+) :
 
 noncomputable section
 
-/--
-  L1(n) - number of formulas of length n-1) that describe shapes that are loops.
--/
+/-- Count valid `n`-wedge loop formulas with a chosen cut. All `n` rotations,
+including the closing one, are recorded; collision freedom is checked on the
+`n` wedges obtained after omitting that last rotation. -/
 def L1 (n : ℕ+) : ℕ :=
   countFormulas n (fun f => isLoop f ∧ Valid (loopFrmToFrm f))
 
 end
 
+/-- The number of valid loop formulas is zero for every odd number of wedges. -/
 lemma noOddLoopsNumeric (n : ℕ+): Odd (n : ℕ) → L1 n = 0 := by
   intro hn
   unfold L1 countFormulas
@@ -360,9 +397,13 @@ lemma noOddLoopsNumeric (n : ℕ+): Odd (n : ℕ) → L1 n = 0 := by
   exact ⟨fun ⟨w, hw⟩ => noOddLoops n hn w hw.1⟩
 
 
+/-- No one-wedge loop formula exists, by the odd-length obstruction. -/
 lemma L1_1_value : L1 1 = 0 := noOddLoopsNumeric 1 (by simp)
+/-- No three-wedge loop formula exists, by the odd-length obstruction. -/
 lemma L1_3_value : L1 3 = 0 := noOddLoopsNumeric 3 ⟨1, by norm_num⟩
+/-- No five-wedge loop formula exists, by the odd-length obstruction. -/
 lemma L1_5_value : L1 5 = 0 := noOddLoopsNumeric 5 ⟨2, by norm_num⟩
+/-- No seven-wedge loop formula exists, by the odd-length obstruction. -/
 lemma L1_7_value : L1 7 = 0 := noOddLoopsNumeric 7 ⟨3, by norm_num⟩
 
 

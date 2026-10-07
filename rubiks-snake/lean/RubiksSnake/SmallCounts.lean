@@ -11,8 +11,10 @@ import Mathlib.Tactic.Ring
 
 namespace RubiksSnake
 
+/-- All four joint settings, listed once each for branching in the prefix-tree enumerator. -/
 private def rotations : List Rotation := [0, 1, 2, 3]
 
+/-- Decide whether two wedge records have distinct centers or complementary face pairs. -/
 private instance (a b : Wedge) : Decidable (interiorDisjoint a b) := by
   unfold interiorDisjoint sameUnorderedPair
   infer_instance
@@ -42,6 +44,8 @@ def fastCountValidFormulas (k : ℕ) : ℕ :=
 def fastS (n : ℕ+) : ℕ :=
   fastCountValidFormulas ((n : ℕ) - 1)
 
+/-- Extending a rotation word adds only its final travel direction; deleting
+that direction recovers the list generated from the original word. -/
 private lemma directionsFrom_append_dropLast (previous axis : Vec3)
     (rs : List Rotation) (r : Rotation) :
     (directionsFrom previous axis (rs ++ [r])).dropLast =
@@ -52,10 +56,13 @@ private lemma directionsFrom_append_dropLast (previous axis : Vec3)
       simpa [directionsFrom, directionTail] using
         congrArg List.tail (ih axis (rotateQuarter axis s previous))
 
+/-- A recursive wedge path always contains its starting wedge, even with no
+further travel directions. -/
 private lemma wedgePath_ne_nil (center incoming outgoing : Vec3) (rest : List Vec3) :
     wedgePath center incoming outgoing rest ≠ [] := by
   cases rest <;> simp [wedgePath]
 
+/-- Appending one travel direction adds only a terminal wedge to a recursive path. -/
 private lemma wedgePath_append_dropLast (center incoming outgoing : Vec3)
     (rest : List Vec3) (d : Vec3) :
     (wedgePath center incoming outgoing (rest ++ [d])).dropLast =
@@ -71,6 +78,8 @@ private lemma wedgePath_append_dropLast (center incoming outgoing : Vec3)
           wedgePath (addVec center outgoing) outgoing next rest
       rw [List.dropLast_cons_of_ne_nil (wedgePath_ne_nil _ _ _ _), ih]
 
+/-- For a direction list with an initial pair, appending one direction and
+then deleting the last wedge recovers all original wedges. -/
 private lemma wedgesFromDirections_append_dropLast (a b : Vec3)
     (rest : List Vec3) (d : Vec3) :
     (wedgesFromDirections (a :: b :: rest ++ [d])).dropLast =
@@ -81,6 +90,8 @@ private lemma wedgesFromDirections_append_dropLast (a b : Vec3)
   rw [wedgesFromDirections_eq_wedgePath, wedgesFromDirections_eq_wedgePath,
     wedgePath_append_dropLast]
 
+/-- Appending one rotation adds exactly the terminal wedge; all earlier cell
+centers and face directions are unchanged. -/
 lemma wedges_append_singleton (rs : List Rotation) (r : Rotation) :
     wedges (rs ++ [r]) = wedges rs ++ [appendedWedge rs r] := by
   have hne : wedges (rs ++ [r]) ≠ [] := by
@@ -114,11 +125,14 @@ lemma wedges_append_singleton (rs : List Rotation) (r : Rotation) :
       rw [hdrop]
       rfl
 
+/-- An extended word is collision-free exactly when its prefix is collision-free
+and the new wedge passes every comparison performed by `canAppend`. -/
 lemma collisionFree_append_iff (rs : List Rotation) (r : Rotation) :
     collisionFree (rs ++ [r]) ↔ collisionFree rs ∧ canAppend rs r := by
   rw [collisionFree, wedges_append_singleton, List.pairwise_append]
   simp [canAppend, collisionFree]
 
+/-- Every word at enumeration depth `k` has exactly `k` rotations, hence `k + 1` wedges. -/
 lemma validRotationLists_length (k : ℕ) (rs : List Rotation)
     (hrs : rs ∈ validRotationLists k) : rs.length = k := by
   induction k generalizing rs with
@@ -132,6 +146,7 @@ lemma validRotationLists_length (k : ℕ) (rs : List Rotation)
         simp [ih pre hpre]
       · simp at hsome
 
+/-- The prefix-tree enumerator is sound: every generated word has pairwise-disjoint wedges. -/
 lemma validRotationLists_valid (k : ℕ) (rs : List Rotation)
     (hrs : rs ∈ validRotationLists k) : ValidList rs := by
   induction k generalizing rs with
@@ -149,6 +164,8 @@ lemma validRotationLists_valid (k : ℕ) (rs : List Rotation)
           ⟨ih pre hpre, by simpa using hcan⟩
       · simp at hsome
 
+/-- A rotation word occurs at its own depth in the enumerator exactly when it
+is valid, establishing both completeness and soundness. -/
 lemma mem_validRotationLists (rs : List Rotation) :
     rs ∈ validRotationLists rs.length ↔ ValidList rs := by
   constructor
@@ -164,6 +181,7 @@ lemma mem_validRotationLists (rs : List Rotation) :
         · fin_cases r <;> simp [rotations]
         · simp [hparts.2]
 
+/-- No rotation word is generated twice at a fixed enumeration depth. -/
 lemma validRotationLists_nodup (k : ℕ) : (validRotationLists k).Nodup := by
   classical
   induction k with
@@ -190,14 +208,18 @@ lemma validRotationLists_nodup (k : ℕ) : (validRotationLists k).Nodup := by
         simp at hpre
         exact hab hpre
 
+/-- Read a rotation list of proven length `k` as an indexed `k`-rotation formula. -/
 def formulaOfList {k : ℕ} (rs : List Rotation) (h : rs.length = k) : Formula k :=
   fun i => rs.get (Fin.cast h.symm i)
 
+/-- Converting a list to an indexed formula and reading it back preserves every entry. -/
 @[simp] lemma ofFn_formulaOfList {k : ℕ} (rs : List Rotation) (h : rs.length = k) :
     List.ofFn (formulaOfList rs h) = rs := by
   cases h
   exact List.ofFn_get rs
 
+/-- Valid indexed `k`-rotation formulas correspond bijectively to the rotation
+lists generated at depth `k`. -/
 def validFormulaEquiv (k : ℕ) :
     {w : Formula k // Valid w} ≃ {rs : List Rotation // rs ∈ validRotationLists k} where
   toFun w := ⟨List.ofFn w, by
@@ -215,6 +237,8 @@ def validFormulaEquiv (k : ℕ) :
     apply Subtype.ext
     exact ofFn_formulaOfList rs.val (validRotationLists_length k rs.val rs.property)
 
+/-- The subtype of entries belonging to a list is equivalent to the subtype of
+its deduplicated finite set; no duplicate-freeness assumption is needed here. -/
 private def listMembershipEquiv [DecidableEq α] (xs : List α) :
     {x : α // x ∈ xs} ≃ ↥xs.toFinset where
   toFun x := ⟨x, List.mem_toFinset.mpr x.property⟩
@@ -222,6 +246,8 @@ private def listMembershipEquiv [DecidableEq α] (xs : List α) :
   left_inv _ := rfl
   right_inv _ := rfl
 
+/-- The executable prefix-tree count equals the abstract count of all valid
+`k`-rotation formulas, using completeness and absence of duplicates. -/
 theorem fastCountValidFormulas_eq (k : ℕ) :
     fastCountValidFormulas k = countValidFormulas k := by
   unfold fastCountValidFormulas countValidFormulas countFormulas
@@ -230,6 +256,7 @@ theorem fastCountValidFormulas_eq (k : ℕ) :
   rw [Nat.card_eq_fintype_card, Fintype.card_coe]
   simpa using (List.toFinset_card_of_nodup (validRotationLists_nodup k)).symm
 
+/-- The executable count with `n - 1` rotations computes exactly the `n`-wedge count `S n`. -/
 theorem fastS_eq_S (n : ℕ+) : fastS n = S n := by
   exact fastCountValidFormulas_eq _
 
@@ -257,13 +284,20 @@ lemma Sn_is_power_of_4 (n : ℕ+) (hfour : n ≤ 4) :
   change countValidFormulas (n - 1) = 4 ^ (n - 1)
   exact hcount
 
-/-- https://oeis.org/A375865 -/
+/-- One wedge has a single valid formula, the empty rotation word
+(see https://oeis.org/A375865). -/
 lemma S1_value: S 1 = 1 := by simpa using Sn_is_power_of_4 1
+/-- All four one-rotation formulas give valid two-wedge snakes. -/
 lemma S2_value: S 2 = 4 := by simpa using Sn_is_power_of_4 2
+/-- All sixteen two-rotation formulas give valid three-wedge snakes. -/
 lemma S3_value: S 3 = 16 := by simpa using Sn_is_power_of_4 3
+/-- All sixty-four three-rotation formulas give valid four-wedge snakes. -/
 lemma S4_value: S 4 = 64 := by simpa using Sn_is_power_of_4 4
+/-- Exact prefix-tree count for five wedges: `241` valid formulas. -/
 lemma S5_value: S 5 = 241 := by snake_decide
+/-- Exact prefix-tree count for six wedges: `920` valid formulas. -/
 lemma S6_value: S 6 = 920 := by snake_decide
+/-- Exact prefix-tree count for seven wedges: `3384` valid formulas. -/
 lemma S7_value : S 7 = 3384 := by snake_decide
 
 end RubiksSnake

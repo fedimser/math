@@ -3,9 +3,9 @@ import RubiksSnake.SnAsymptotitc_MuUpperBound
 /-!
 # An explicit pointwise upper bound
 
-The compressed collision-prefix certificate gives
-`S n <= (9/2) * 3.675^(n-1)` for every positive snake length.
-The smaller seven- and five-symbol window certificates and the older
+The length-sixteen collision-prefix certificate gives
+`S n <= 3 * 3.661786723^(n-1)` for every positive snake length.
+The earlier prefix and window certificates and the older
 block-submultiplicativity API remain available.
 -/
 
@@ -13,11 +13,36 @@ namespace RubiksSnake
 
 noncomputable section
 
+/-- The length-sixteen certificate has base `3.661786723` and prefactor `3`. -/
+theorem countValidFormulas_upper_bound_3661786723_div_1000000000 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤
+      3 * (3661786723 / 1000000000 : ℝ) ^ k :=
+  countValidFormulas_le_forbidden_prefix_sixteen_upper k
+
+/-- Reindex the strongest prefix-automaton bound for an `n`-wedge snake, whose word has `n - 1` rotations. -/
+theorem Sn_upper_bound_3661786723_div_1000000000 (n : ℕ+) :
+    (S n : ℝ) ≤
+      3 * (3661786723 / 1000000000 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_3661786723_div_1000000000 ((n : ℕ) - 1)
+
+/-- The length-fourteen certificate has base `3.667542939` and prefactor `3`. -/
+theorem countValidFormulas_upper_bound_3667542939_div_1000000000 (k : ℕ) :
+    (countValidFormulas k : ℝ) ≤
+      3 * (3667542939 / 1000000000 : ℝ) ^ k :=
+  countValidFormulas_le_forbidden_prefix_fourteen_upper k
+
+/-- The length-fourteen certificate gives the master-paper base 3.667542939 at every wedge length. -/
+theorem Sn_upper_bound_3667542939_div_1000000000 (n : ℕ+) :
+    (S n : ℝ) ≤
+      3 * (3667542939 / 1000000000 : ℝ) ^ ((n : ℕ) - 1) :=
+  countValidFormulas_upper_bound_3667542939_div_1000000000 ((n : ℕ) - 1)
+
 /-- A uniform upper bound from the compressed collision-prefix automaton. -/
 theorem countValidFormulas_upper_bound_147_div_40 (k : ℕ) :
     (countValidFormulas k : ℝ) ≤ (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ k :=
   countValidFormulas_le_forbidden_prefix_upper k
 
+/-- The length-twelve prefix certificate gives `S n <= (9/2) * 3.675^(n - 1)`. -/
 theorem Sn_upper_bound_147_div_40 (n : ℕ+) :
     (S n : ℝ) ≤ (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ ((n : ℕ) - 1) :=
   countValidFormulas_upper_bound_147_div_40 ((n : ℕ) - 1)

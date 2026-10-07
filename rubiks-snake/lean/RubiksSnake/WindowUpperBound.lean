@@ -26,27 +26,42 @@ namespace RubiksSnake
 
 namespace WindowUpper
 
+/-- The four rotation labels, each listed once when enumerating local extensions. -/
 def rotations : List Rotation := [0, 1, 2, 3]
 
+/-- Retains the last five rotations, or the whole word when fewer than five
+rotations have been chosen. -/
 def suffix (rs : List Rotation) : List Rotation :=
   rs.drop (rs.length - 5)
 
+/-- Shifts a nonempty window by discarding its oldest rotation and appending
+the new one, without performing a collision check. -/
 def next (rs : List Rotation) (r : Rotation) : List Rotation :=
   rs.tail ++ [r]
 
+/-- Weights shifted windows for turns accepted by `canAppend`; on a valid
+five-rotation source this checks the resulting six-rotation word. -/
 def outgoing (w : List Rotation → ℕ) (rs : List Rotation) : ℕ :=
   (rotations.map fun r => if canAppend rs r then w (next rs r) else 0).sum
 
+/-- Number of rotation labels accepted by `canAppend`, used to control the
+final extension separately from the potential's growth. -/
 def degree (rs : List Rotation) : ℕ :=
   outgoing (fun _ => 1) rs
 
+/-- Big-endian base-four index used for five-rotation windows; the word's length
+is not encoded, unlike the variable-length prefix keys. -/
 private def encode (rs : List Rotation) : ℕ :=
   rs.foldl (fun i r => 4 * i + r.val) 0
 
+/-- Converts an index below `4^5` into exactly five rotation digits, retaining
+leading zero rotations. -/
 private def decode (i : Fin 1024) : List Rotation :=
   List.ofFn fun j : Fin 5 =>
     (⟨(i.val / 4 ^ (4 - j.val)) % 4, Nat.mod_lt _ (by decide)⟩ : Rotation)
 
+/-- Full 1024-row graph of five-rotation windows, with empty rows for invalid
+windows and one edge for each locally allowed rotation at a valid window. -/
 private def edges : Array (List ℕ) :=
   Array.ofFn fun i : Fin 1024 =>
     let rs := decode i
@@ -55,11 +70,17 @@ private def edges : Array (List ℕ) :=
         if canAppend rs r then some (encode (next rs r)) else none
     else []
 
+/-- Exact adjacency iterates from the all-ones vector on the five-window graph,
+counting local paths of the requested length. -/
 private def iterateWeights (n : ℕ) : Array ℕ :=
   WindowComputation.iterateWeights edges n
 
+/-- Candidate potential after twelve adjacency iterations, whose counting
+usefulness is established by the finite integer certificate. -/
 private def potential : Array ℕ := iterateWeights 12
 
+/-- Array-backed five-window potential; out-of-range base-four indices have
+weight zero. -/
 def weight (rs : List Rotation) : ℕ :=
   potential[encode rs]?.getD 0
 
@@ -67,12 +88,17 @@ def weight (rs : List Rotation) : ℕ :=
 theorem edge_count : (edges.toList.map List.length).sum = 3384 := by
   native_decide
 
+/-- Native proof that every valid five-rotation formula satisfies one-step
+terminal domination at scale `1093187` and the exact integer outgoing bound
+`5000 * outgoing weight <= 18601 * weight`. -/
 private theorem finite_certificate :
     ∀ f : Formula 5, Valid f →
       1093187 * degree (List.ofFn f) ≤ weight (List.ofFn f) ∧
       5000 * outgoing weight (List.ofFn f) ≤ 18601 * weight (List.ofFn f) := by
   native_decide
 
+/-- List-form certificate for a valid five-rotation window, combining final-step
+count domination with the exact rational outgoing bound of ratio `18601 / 5000`. -/
 lemma certificate (rs : List Rotation) (hlen : rs.length = 5)
     (hvalid : ValidList rs) :
     1093187 * degree rs ≤ weight rs ∧
@@ -84,14 +110,20 @@ lemma certificate (rs : List Rotation) (hlen : rs.length = 5)
   simpa only [ofFn_formulaOfList] using
     finite_certificate (formulaOfList rs hlen) hvalid'
 
+/-- Sum of retained five-window potentials over actual valid words with `k`
+rotations (`k + 1` wedges), not merely over distinct suffix states. -/
 def totalWeight (k : ℕ) : ℕ :=
   ((validRotationLists k).map fun rs => weight (suffix rs)).sum
 
+/-- Identifies this five-window total with the generic finite-window total,
+allowing the universal extension and terminal lemmas to be reused. -/
 private lemma totalWeight_eq (k : ℕ) :
     totalWeight k = FiniteWindowUpper.totalWeight 5 weight k := by
   simp only [totalWeight, FiniteWindowUpper.totalWeight, WindowComputation.validWords_eq,
     suffix, FiniteWindowUpper.suffix]
 
+/-- Once five rotations are present, the exact statewise integer inequality
+lifts to the same one-step growth inequality for actual weighted totals. -/
 lemma totalWeight_step (k : ℕ) (hk : 5 ≤ k) :
     5000 * totalWeight (k + 1) ≤ 18601 * totalWeight k := by
   rw [totalWeight_eq, totalWeight_eq]
@@ -100,6 +132,8 @@ lemma totalWeight_step (k : ℕ) (hk : 5 ≤ k) :
   rw [WindowComputation.outgoing_eq_canAppend weight rs hvalid]
   exact (certificate rs hlen hvalid).2
 
+/-- For `k >= 5`, the potential total dominates `1093187` times the actual
+`(k + 1)`-rotation formula count, reserving one terminal step for dead ends. -/
 lemma count_next_le_totalWeight (k : ℕ) (hk : 5 ≤ k) :
     1093187 * countValidFormulas (k + 1) ≤ totalWeight k := by
   rw [totalWeight_eq]
@@ -109,9 +143,13 @@ lemma count_next_le_totalWeight (k : ℕ) (hk : 5 ≤ k) :
   rw [WindowComputation.outgoing_eq_canAppend _ rs hvalid]
   exact (certificate rs hlen hvalid).1
 
+/-- Exact initial sum of potentials at five rotations, distinct from the
+number of valid five-rotation window states. -/
 lemma totalWeight_five : totalWeight 5 = 6389332796 := by
   native_decide
 
+/-- Bounds actual weighted totals after the starting five rotations by the
+certified initial sum times the exact geometric factor `(18601 / 5000)^t`. -/
 lemma totalWeight_bound (t : ℕ) :
     (totalWeight (5 + t) : ℝ) ≤ 6389332796 * (18601 / 5000 : ℝ) ^ t := by
   induction t with
@@ -134,6 +172,9 @@ lemma totalWeight_bound (t : ℕ) :
           rw [pow_succ]
           ring
 
+/-- Uses the five-rotation starting window and one terminal step to bound
+valid `(6 + t)`-rotation formulas with prefactor `9 / 4` and exact base
+`18601 / 5000`. -/
 lemma count_bound_from_six (t : ℕ) :
     (countValidFormulas (6 + t) : ℝ) ≤
       (9 / 4 : ℝ) * (18601 / 5000 : ℝ) ^ (6 + t) := by

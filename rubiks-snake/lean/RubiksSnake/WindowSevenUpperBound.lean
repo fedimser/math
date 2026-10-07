@@ -14,13 +14,19 @@ by the elementary count `4^k`.
 namespace RubiksSnake
 namespace WindowSevenUpper
 
+/-- Seven-window potential summed over actual valid `k`-rotation words,
+retaining multiplicity when several words have the same suffix. -/
 def totalWeight (k : ℕ) : ℕ :=
   FiniteWindowUpper.totalWeight 7 weight k
 
+/-- At seven rotations, the weighted total is the certified initial sum over
+valid full-window states. -/
 lemma totalWeight_seven : totalWeight 7 = 83514793291 := by
   rw [totalWeight, FiniteWindowUpper.totalWeight_at_width]
   exact initialWeight_value
 
+/-- Actual weighted totals after `t` further rotations grow by at most the
+exact factor `(463 / 125)^t` from the certified seven-rotation initial total. -/
 lemma totalWeight_bound (t : ℕ) :
     (totalWeight (7 + t) : ℝ) ≤ 83514793291 * (463 / 125 : ℝ) ^ t := by
   have h := FiniteWindowUpper.totalWeight_bound 7 (by decide) weight 463 125
@@ -28,6 +34,8 @@ lemma totalWeight_bound (t : ℕ) :
   change (totalWeight (7 + t) : ℝ) ≤ (totalWeight 7 : ℝ) * _ at h
   simpa only [totalWeight_seven, Nat.cast_ofNat] using h
 
+/-- Combines the seven-rotation starting window and two terminal steps to bound
+valid `(9 + t)`-rotation formulas with prefactor `8 / 3` and exact base `463 / 125`. -/
 lemma count_bound_from_nine (t : ℕ) :
     (countValidFormulas (9 + t) : ℝ) ≤
       (8 / 3 : ℝ) * (463 / 125 : ℝ) ^ (9 + t) := by

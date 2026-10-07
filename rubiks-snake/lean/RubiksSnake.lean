@@ -1,6 +1,8 @@
 import RubiksSnake.Burnside
+import RubiksSnake.BoundedComponents
 import RubiksSnake.Definitions
 import RubiksSnake.FinalResults
+import RubiksSnake.FiniteTransfer
 import RubiksSnake.FormulaTransform
 import RubiksSnake.Geometry
 import RubiksSnake.Loops

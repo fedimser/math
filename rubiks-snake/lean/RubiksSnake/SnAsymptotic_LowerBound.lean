@@ -1,4 +1,6 @@
 import RubiksSnake.SnAsymptoticEasy
+import RubiksSnake.RenewalBounds
+import RubiksSnake.SlabLowerBound
 import RubiksSnake.SlabBlocks
 import RubiksSnake.RecordBlocks
 import RubiksSnake.WeightedRecordLowerBound
@@ -21,48 +23,13 @@ Allowing adjacent blocks to share a plane gives the stronger rate `3.16`.
 counts for legal continuations. Weighting those same interfaces improves
 the rate to `3.193`. Submultiplicativity removes the finite induction
 prefactor from the final bounds.
+
+The larger irreducible-slab certificate gives `3.400034903`. Its native
+enumerator is proved to count distinct, compatible, collision-free blocks;
+backward crossings of internal boundaries give unique decoding.
 -/
 
 namespace RubiksSnake
-
-lemma renewal_ge_of_finite_certificate
-    (f : ℕ → ℕ) (L start : ℕ) (coeff : Fin L → ℕ)
-    (a q : ℝ) (ha : 0 ≤ a) (hq : 0 ≤ q)
-    (hpoly : q ^ L ≤ ∑ j : Fin L, (coeff j : ℝ) * q ^ (L - (j.val + 1)))
-    (hbase : ∀ k, start ≤ k → k < start + L → a * q ^ k ≤ f k)
-    (hrec : ∀ k, start + L ≤ k →
-      (∑ j : Fin L, (coeff j : ℝ) * (f (k - (j.val + 1)) : ℝ)) ≤ f k)
-    (k : ℕ) (hk : start ≤ k) :
-    a * q ^ k ≤ f k := by
-  induction k using Nat.strong_induction_on with
-  | h k ih =>
-      by_cases hsmall : k < start + L
-      · exact hbase k hk hsmall
-      · have hlarge : start + L ≤ k := by omega
-        have hpow (j : Fin L) :
-            q ^ (k - L) * q ^ (L - (j.val + 1)) = q ^ (k - (j.val + 1)) := by
-          rw [← pow_add]
-          congr 1
-          omega
-        calc
-          a * q ^ k = (a * q ^ (k - L)) * q ^ L := by
-            rw [mul_assoc, ← pow_add, Nat.sub_add_cancel (by omega : L ≤ k)]
-          _ ≤ (a * q ^ (k - L)) *
-              (∑ j : Fin L, (coeff j : ℝ) * q ^ (L - (j.val + 1))) :=
-            mul_le_mul_of_nonneg_left hpoly (mul_nonneg ha (pow_nonneg hq _))
-          _ = ∑ j : Fin L, (coeff j : ℝ) * (a * q ^ (k - (j.val + 1))) := by
-            rw [Finset.mul_sum]
-            apply Finset.sum_congr rfl
-            intro j _
-            rw [show (a * q ^ (k - L)) * ((coeff j : ℝ) * q ^ (L - (j.val + 1))) =
-                (coeff j : ℝ) * (a * (q ^ (k - L) * q ^ (L - (j.val + 1)))) by ring,
-              hpow]
-          _ ≤ ∑ j : Fin L, (coeff j : ℝ) * (f (k - (j.val + 1)) : ℝ) := by
-            apply Finset.sum_le_sum
-            intro j _
-            exact mul_le_mul_of_nonneg_left
-              (ih (k - (j.val + 1)) (by omega) (by omega)) (Nat.cast_nonneg _)
-          _ ≤ f k := hrec k hlarge
 
 /-- Number of words in the renewal language with total block length `n`. -/
 def planeRenewal (n : ℕ) : ℕ :=
@@ -77,10 +44,12 @@ def planeRenewal (n : ℕ) : ℕ :=
 termination_by n
 decreasing_by all_goals omega
 
+/-- The empty concatenation is the unique plane-renewal word of total length zero. -/
 lemma planeRenewal_zero : planeRenewal 0 = 1 := by
   rw [planeRenewal]
   simp
 
+/-- At lengths at least seven, all six block sizes contribute with their certified multiplicities. -/
 lemma planeRenewal_rec (n : ℕ) (hn : 7 ≤ n) :
     planeRenewal n =
       4 * planeRenewal (n - 2) +
@@ -98,14 +67,22 @@ lemma planeRenewal_rec (n : ℕ) (hn : 7 ≤ n) :
   rw [planeRenewal]
   simp [planeBlockCount, hn0, h2, h3, h4, h5, h6, hn]
 
+/-- The first nonempty renewal count supplies the length-two induction base. -/
 private lemma planeRenewal_two : planeRenewal 2 = 4 := by native_decide
+/-- Certified length-three renewal count for the initial induction interval. -/
 private lemma planeRenewal_three : planeRenewal 3 = 8 := by native_decide
+/-- The length-four renewal count includes both single blocks and two length-two blocks. -/
 private lemma planeRenewal_four : planeRenewal 4 = 32 := by native_decide
+/-- Certified length-five renewal count, including all allowed block decompositions. -/
 private lemma planeRenewal_five : planeRenewal 5 = 88 := by native_decide
+/-- Certified length-six renewal count for the finite exponential-bound check. -/
 private lemma planeRenewal_six : planeRenewal 6 = 296 := by native_decide
+/-- Certified length-seven renewal count at the largest individual block size. -/
 private lemma planeRenewal_seven : planeRenewal 7 = 904 := by native_decide
+/-- The length-eight renewal count closes the seven-index induction base starting at two. -/
 private lemma planeRenewal_eight : planeRenewal 8 = 2752 := by native_decide
 
+/-- Apply the finite renewal criterion at base 3.1 with prefactor one quarter. -/
 private lemma planeRenewal_ge_aux (k : ℕ) (hk : 2 ≤ k) :
     (1 / 4 : ℝ) * ((31 / 10 : ℝ) ^ k) ≤ planeRenewal k := by
   apply renewal_ge_of_finite_certificate planeRenewal 7 2
@@ -127,6 +104,7 @@ theorem planeRenewal_ge (k : ℕ) (hk : 2 ≤ k) :
     (1 / 4 : ℝ) * ((31 / 10 : ℝ) ^ k) ≤ planeRenewal k :=
   planeRenewal_ge_aux k hk
 
+/-- The explicit plane-block language has the same counts as the scalar renewal recurrence. -/
 lemma planeLanguage_length_eq_planeRenewal (n : ℕ) :
     (planeLanguage n).length = planeRenewal n := by
   induction n using Nat.strong_induction_on with
@@ -148,6 +126,7 @@ theorem planeRenewal_le_countValidFormulas (k : ℕ) :
   rw [← planeLanguage_length_eq_planeRenewal]
   exact planeLanguage_length_le k
 
+/-- Plane-block concatenations give `(1/4) * 3.1^k` valid formulas at every rotation length. -/
 theorem countValidFormulas_lower_bound_31_div_10_with_prefactor (k : ℕ) :
     (1 / 4 : ℝ) * (31 / 10 : ℝ) ^ k ≤ countValidFormulas k := by
   by_cases hk : 2 ≤ k
@@ -173,10 +152,13 @@ theorem Sn_lower_bound_31_div_10 (n : ℕ+) :
    (31 / 10 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
  countValidFormulas_lower_bound_31_div_10 ((n : ℕ) - 1)
 
+/-- Integer arithmetic checks the seven initial record-renewal inequalities at base 3.16,
+clearing the denominator and the one-quarter prefactor. -/
 private lemma recordRenewal_base :
    ∀ j : Fin 7, 79 ^ (j.val + 2) ≤ 4 * 25 ^ (j.val + 2) * recordRenewal (j.val + 2) := by
  native_decide
 
+/-- Uniform continuation counts for occupied interfaces give record-renewal growth at base 3.16. -/
 lemma recordRenewal_ge (k : ℕ) (hk : 2 ≤ k) :
    (1 / 4 : ℝ) * (79 / 25 : ℝ) ^ k ≤ recordRenewal k := by
  apply renewal_ge_of_finite_certificate recordRenewal 7 2
@@ -205,6 +187,7 @@ lemma recordRenewal_ge (k : ℕ) (hk : 2 ≤ k) :
    norm_num [Fin.sum_univ_succ, recordLowerCount, h2, h3, h4, h5, h6, h7]
    linarith
 
+/-- The occupied-interface construction gives `(1/4) * 3.16^k` valid formulas, including short lengths. -/
 theorem countValidFormulas_lower_bound_79_div_25_with_prefactor (k : ℕ) :
    (1 / 4 : ℝ) * (79 / 25 : ℝ) ^ k ≤ countValidFormulas k := by
  by_cases hk : 2 ≤ k
@@ -216,6 +199,7 @@ theorem countValidFormulas_lower_bound_79_div_25_with_prefactor (k : ℕ) :
    · have h1 : countValidFormulas 1 = 4 := by simpa [S] using S2_value
      norm_num [h1]
 
+/-- Pass the occupied-interface rate through the growth constant to remove its prefactor. -/
 theorem countValidFormulas_lower_bound_79_div_25 (k : ℕ) :
    (79 / 25 : ℝ) ^ k ≤ countValidFormulas k := by
  have hmu : (79 / 25 : ℝ) ≤ snakeGrowthConstant :=
@@ -224,10 +208,13 @@ theorem countValidFormulas_lower_bound_79_div_25 (k : ℕ) :
  exact (pow_le_pow_left₀ (by norm_num) hmu k).trans
    (snakeGrowthConstant_pow_le_countValidFormulas k)
 
+/-- Every positive wedge length satisfies the pointwise lower bound with base 3.16. -/
 theorem Sn_lower_bound_79_div_25 (n : ℕ+) :
    (79 / 25 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
  countValidFormulas_lower_bound_79_div_25 ((n : ℕ) - 1)
 
+/-- Weighted occupied-interface counts give base 3.193, with the induction prefactor removed
+using submultiplicativity of valid-formula counts. -/
 theorem countValidFormulas_lower_bound_3193_div_1000 (k : ℕ) :
    (3193 / 1000 : ℝ) ^ k ≤ countValidFormulas k := by
  have hc : 0 < (1 / (RecordWeighting.baseScale : ℝ)) :=
@@ -239,8 +226,20 @@ theorem countValidFormulas_lower_bound_3193_div_1000 (k : ℕ) :
  exact (pow_le_pow_left₀ (by norm_num) hmu k).trans
    (snakeGrowthConstant_pow_le_countValidFormulas k)
 
+/-- Reindex the weighted-interface lower bound by the number of wedges rather than rotations. -/
 theorem Sn_lower_bound_3193_div_1000 (n : ℕ+) :
    (3193 / 1000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
  countValidFormulas_lower_bound_3193_div_1000 ((n : ℕ) - 1)
+
+/-- The fully verified irreducible-slab construction bounds formula counts below by
+`3.400034903^k` with prefactor one. -/
+theorem countValidFormulas_lower_bound_3400034903_div_1000000000 (k : ℕ) :
+    (3400034903 / 1000000000 : ℝ) ^ k ≤ countValidFormulas k :=
+  SlabEnumeration.count_lower_bound k
+
+/-- The certified slab lower base applies to every positive wedge length with exponent `n - 1`. -/
+theorem Sn_lower_bound_3400034903_div_1000000000 (n : ℕ+) :
+    (3400034903 / 1000000000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
+  SlabEnumeration.Sn_lower_bound n
 
 end RubiksSnake

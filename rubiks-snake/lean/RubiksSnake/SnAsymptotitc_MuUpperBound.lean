@@ -1,13 +1,15 @@
 import RubiksSnake.WindowUpperBound
 import RubiksSnake.WindowSevenUpperBound
 import RubiksSnake.ForbiddenPrefixUpperBound
+import RubiksSnake.ForbiddenPrefixFourteenUpperBound
+import RubiksSnake.ForbiddenPrefixSixteenUpperBound
 
 /-!
 # Upper bounds on the Rubik's Snake growth constant
 
-A compressed collision-prefix certificate gives `mu <= 3.675`.
-Its pointwise bound passes to the logarithmic growth limit. The seven-symbol
-`3.704` and five-symbol `3.7202` window certificates remain available.
+A length-sixteen collision-prefix certificate gives `mu <= 3.661786723`.
+Its same-base pointwise bound passes to the logarithmic growth limit. The
+earlier prefix and window certificates remain available.
 -/
 
 open Filter Set Topology
@@ -48,7 +50,19 @@ theorem snakeGrowthConstant_le_of_pointwise
   rw [← Real.exp_log snakeGrowthConstant_pos, ← Real.exp_log hq]
   exact Real.exp_le_exp.mpr hlog
 
-/-- The compressed collision-prefix certificate gives `mu <= 3.675`. -/
+/-- The length-sixteen prefix certificate improves the master upper endpoint. -/
+theorem snakeGrowthConstant_le_3661786723_div_1000000000 :
+    snakeGrowthConstant ≤ (3661786723 / 1000000000 : ℝ) := by
+  exact snakeGrowthConstant_le_of_pointwise 3 (3661786723 / 1000000000)
+    (by norm_num) (by norm_num) countValidFormulas_le_forbidden_prefix_sixteen_upper
+
+/-- The length-fourteen prefix certificate matches the master upper endpoint. -/
+theorem snakeGrowthConstant_le_3667542939_div_1000000000 :
+    snakeGrowthConstant ≤ (3667542939 / 1000000000 : ℝ) := by
+  exact snakeGrowthConstant_le_of_pointwise 3 (3667542939 / 1000000000)
+    (by norm_num) (by norm_num) countValidFormulas_le_forbidden_prefix_fourteen_upper
+
+/-- The length-twelve collision-prefix certificate gives `mu <= 3.675`. -/
 theorem snakeGrowthConstant_le_147_div_40 :
     snakeGrowthConstant ≤ (147 / 40 : ℝ) := by
   exact snakeGrowthConstant_le_of_pointwise (9 / 2) (147 / 40)
@@ -108,6 +122,8 @@ theorem snakeGrowthConstant_le_of_exact_count
 
 end
 
+/-- Floating-point estimate of `S_n^(1/(n - 1))` for exploratory evaluation.
+This helper neither checks `n > 1` nor supplies a proof of a numerical bound. -/
 def boundHelper (n Sn : Nat) : Float :=
   Float.pow Sn.toFloat (1.0 / (n.toFloat - 1.0))
 

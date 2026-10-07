@@ -4,6 +4,8 @@ import Mathlib.Tactic.IntervalCases
 namespace RubiksSnake
 namespace ForbiddenPrefixUpper
 
+/-- Reserves four terminal rotations to obtain the exact pointwise bound with
+prefactor `9 / 2` and base `147 / 40` for the count of valid `(4 + k)`-rotation formulas. -/
 lemma count_bound_from_four (k : ℕ) :
     (countValidFormulas (4 + k) : ℝ) ≤
       (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ (4 + k) := by
@@ -23,6 +25,8 @@ lemma count_bound_from_four (k : ℕ) :
 
 end ForbiddenPrefixUpper
 
+/-- Uniform certified bound with prefactor `9 / 2` and exact rational base
+`147 / 40` for the count of valid formulas with `k` rotations and `k + 1` wedges. -/
 theorem countValidFormulas_le_forbidden_prefix_upper (k : ℕ) :
     (countValidFormulas k : ℝ) ≤ (9 / 2 : ℝ) * (147 / 40 : ℝ) ^ k := by
   by_cases hk : 4 ≤ k

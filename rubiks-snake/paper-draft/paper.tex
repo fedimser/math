@@ -27,18 +27,16 @@ $n$-wedge Rubik's Snake with quarter-turn joints. We prove that
 $\mu=\lim_{n\to\infty}S_n^{1/(n-1)}$ exists and that
 $\mu^{n-1}\leq S_n$ at every positive length.
 A Lean formalization establishes
-$3.193\leq\mu\leq3.675$ and
-$(3.193)^{n-1}\leq S_n\leq(9/2)(3.675)^{n-1}$.
-The lower construction allows successive blocks to share an occupied
-plane and weights each interface by its available continuations.
-The upper proof retains only the suffixes needed to recognize
-short collision patterns, reducing a graph with more than two million
-window states to $46\,599$ states. Both arguments use exact finite
-checks generated inside Lean.
-Separate Python slab enumerations give $\mu>3.400034903$, and hence
-$S_n>(3.400034903)^{n-1}$ for $n\geq2$.
-A larger archived window computation reports $\mu\leq3.667542939$;
-that certificate is outside the formalization.
+$q_-\leq\mu\leq q_+$ and
+$q_-^{n-1}\leq S_n\leq3q_+^{n-1}$, where
+$q_-=3.400034903$ and $q_+=3.661786723$.
+The lower construction concatenates irreducible slabs. Recording a
+backward crossing of each internal boundary allows direct enumeration
+of these blocks and proves unique decoding.
+The upper proof uses $4\,748\,260$ suffix states to recognize short
+collision patterns. Both arguments use exact finite checks in Lean.
+The slab counter is compiled to native code, with separate proofs of
+its counting and geometric invariants.
 We do not assume a ratio limit or an asymptotic of the form $C\mu^n$.
 \end{abstract}
 
@@ -76,16 +74,17 @@ the weakly directed walks of~\cite{bacher2011}, provide related examples
 of the latter approach; their two-dimensional growth constants do not
 apply to this model.
 
+Put $\qminus=3.400034903$ and $\qplus=3.661786723$.
 Our fully formalized bounds are
 \begin{equation}\label{eq:formal-bounds}
  \boxed{\begin{gathered}
-  3.193\leq\mu\leq3.675,\\
-  (3.193)^{n-1}\leq S_n\leq\frac92(3.675)^{n-1}
+  \qminus\leq\mu\leq\qplus,\\
+  \qminus^{n-1}\leq S_n\leq3\qplus^{n-1}
   \qquad(n\geq1).
  \end{gathered}}
 \end{equation}
-The lower proof checks small blocks that can enter an already occupied
-plane and retains the dependence of continuation counts on that interface.
+The lower proof uses three slab widths and proves that the enumerated
+blocks form a uniquely decoded language of valid snakes.
 The upper proof uses a compressed suffix automaton and a
 nonnegative weight function. Allowing zero weights at dead ends avoids
 the large prefactors produced by an artificially positive vector.
@@ -93,11 +92,9 @@ The Lean sources are in the repository's
 \href{https://github.com/fedimser/math/tree/master/rubiks-snake/lean}
 {\texttt{rubiks-snake/lean}} directory.
 
-Larger Python computations give stronger numerical bounds on $\mu$.
-We describe their certificates separately from
-\eqref{eq:formal-bounds}, including the archival status of the largest
-upper-bound run. The strongest reported interval is
-$(3.400034903,3.667542939]$.
+Python notebooks reproduce the slab and window computations.
+Section~\ref{sec:reproduce} distinguishes their archived output from
+the independently checked Lean certificates.
 
 \section{The geometric model}\label{sec:geometry}
 
@@ -355,8 +352,8 @@ uses the same $428$ blocks.
 
 \subsection{Larger disjoint slabs}\label{sec:slabs}
 
-The stronger Python lower bound uses wider blocks with no shared
-occupied plane. A block of progress $d$ enters $(0,0,0)$ by a
+The strongest lower bound uses wider blocks with no shared occupied
+plane. A block of progress $d$ enters $(0,0,0)$ by a
 $+e_x$ edge, stays in the layers $0\leq x\leq d-1$, and leaves
 its last cube by a $+e_x$ edge. Its length $j$ is its number of
 wedges, or its number of internal edges plus the exit edge.
@@ -370,6 +367,16 @@ to $h+1$ a \emph{separator} if all earlier vertices have $x\leq h$
 and all later vertices have $x\geq h+1$.
 Cutting at every separator gives a unique decomposition into
 irreducible blocks.
+
+An internal boundary admits a separator exactly when the path never
+crosses it in the $-e_x$ direction. The first crossing is forward,
+since the path starts to its left. If there is no backward crossing,
+all later vertices stay to its right. If there is a backward crossing,
+the earlier forward crossing prevents any later edge at that boundary
+from separating the path.
+Thus a block is irreducible precisely when it crosses every internal
+boundary backwards at least once. The Lean counter records these
+crossings in a bit mask.
 
 If $I_{d,j}$ counts irreducible blocks, this decomposition gives
 \begin{equation}\label{eq:factorization}
@@ -398,13 +405,13 @@ and let $L$ be their maximum length. The concatenation counts obey
  c_0=1,\quad c_k=0\ (k<0),\qquad
  c_k=\sum_{j=1}^Li_jc_{k-j}\quad(k\geq1).
 \end{equation}
-Prepending a fixed wedge outside the first slab and appending a
-fixed-orientation wedge outside the last gives
+The exit direction specifies the last wedge. Prepending the fixed
+first wedge in the preceding layer gives
 \begin{equation}\label{eq:lower-pointwise}
- c_k\leq S_{k+2}.
+ c_k\leq S_{k+1}.
 \end{equation}
-The direction sequence and terminal orientation recover the
-rotation word uniquely.
+The direction sequence recovers the rotation word in the fixed
+initial frame.
 
 \begin{theorem}\label{thm:renewal}
 Let $\alpha>0$ solve $\sum_{j=1}^Li_j\alpha^{-j}=1$.
@@ -424,8 +431,14 @@ $C=1+C\sum_ji_j\alpha^{-j}=1+C$, a contradiction.
 The strict polynomial inequality says that $p/D<\alpha$.
 \end{proof}
 
-The notebook \texttt{mu-lower.ipynb} enumerates progresses $1,2,3$
-through internal lengths $28,20,18$. The retained polynomial has
+For progresses $1,2,3$ through internal lengths $28,20,18$, the
+Lean counter selects irreducibles directly by recording a backward
+crossing of every internal slab boundary.
+The notebook \texttt{mu-lower.ipynb} obtains the same rows by
+subtracting decomposable blocks using \eqref{eq:irreducible}.
+Their agreement provides an independent check; only the directly
+counted Lean rows enter the formal proof.
+The retained polynomial has
 $L=29$, with
 \[
  i_2,\ldots,i_9=4,8,16,24,40,72,272,1200.
@@ -443,6 +456,18 @@ The older finite induction check
 $c_k\geq(41/250)\qminus^k$ for $k\geq2$ remains a bound on the
 renewal sequence itself. Its prefactor is unnecessary in
 \eqref{eq:closed-lower}.
+
+The Lean induction uses the simpler prefactor $4^{-31}$.
+Since $i_2,i_3>0$, every $k\geq2$ has $c_k\geq1$.
+For $2\leq k\leq30$, the bound
+$4^{-31}\qminus^k\leq1$ follows from $\qminus<4$.
+For $k\geq31$, all indices $k-j$ in \eqref{eq:renewal} are at
+least two, and \eqref{eq:lower-certificate} proves the induction step.
+Taking growth rates and applying \eqref{eq:fekete-pointwise}
+gives the non-strict lower bounds stated in \eqref{eq:formal-bounds}.
+The formal proof needs the counted blocks to be valid and irreducible;
+it does not need completeness of the enumeration or a formalization
+of the subtraction formula \eqref{eq:irreducible}.
 
 \section{Upper bounds}\label{sec:upper}
 
@@ -493,10 +518,11 @@ $DA_mv\leq pv$ exactly. Separate normalization of cyclic components
 prevents smaller components from vanishing numerically.
 The archived largest run reports
 \begin{equation}\label{eq:qplus}
- \mu\leq\qplus=\frac{3667542939}{10^9}.
+ \mu\leq\frac{3667542939}{10^9}=3.667542939.
 \end{equation}
-This run is not part of the Lean proof; its saved result predates
-the notebook's overflow-safe verification revision.
+Its saved result predates the notebook's overflow-safe verification
+revision. A length-14 compressed certificate proves the same endpoint
+independently; the length-16 certificate below improves it.
 
 \subsection{A compressed suffix graph}\label{sec:prefix}
 
@@ -505,8 +531,8 @@ collision. A \emph{minimal collision word} is invalid but has valid
 prefix and suffix of one fewer symbol. Its collision must be
 between its first and last wedges, since deleting either end removes
 all collisions. We generate closed center paths of lengths
-$4,6,8,10,12$ and keep the words satisfying these tests.
-There are $44\,736$ such words.
+$4,6,8,10,12,14,16$ and keep the words satisfying these tests.
+There are $4\,441\,614$ such words.
 
 Let $\mathcal P$ consist of their proper prefixes, including the
 empty word. It is prefix-closed. For any word $w$, let $p(w)$
@@ -527,9 +553,8 @@ The proof needs prefix closure and these local validity checks;
 it does not require a proof that the list of collision words is
 exhaustive.
 
-This graph has $46\,599$ states and $136\,848$ labeled edges.
-For comparison, the length-eleven window graph has $2\,333\,757$
-states and $8\,561\,679$ edges. We now use the outgoing operator
+This graph has $4\,748\,260$ states and $14\,133\,721$ labeled edges.
+We use the outgoing operator
 \[
  (Tf)(u)=\sum_{u\xrightarrow{r}v}f(v),
 \]
@@ -553,33 +578,34 @@ $T^k\one\leq s^{-1}T^{k-t}w\leq s^{-1}q^{k-t}w$.
 \end{proof}
 
 The terminal inequality permits $w$ to vanish at states that cannot
-support a sufficiently long continuation. In this graph, put
-$w=T^{20}\one$. The exact checks are
+support a sufficiently long continuation. Start with
+$w_0=10^{18}\one$ and perform 48 componentwise integer updates
+$w_{r+1}=\lfloor Tw_r/4\rfloor$. For $w=w_{48}$, the exact checks are
 \[
  \begin{gathered}
- 40Tw\leq147w,\qquad361538007\,T^4\one\leq w,\\
- w(\varnothing)=284786048601.
+ 10^9Tw\leq3661786723w,\qquad sT^6\one\leq w,\\
+ s=2\,990\,000\,000\,000,\\
+ w(\varnothing)=21\,309\,021\,059\,784\,288.
  \end{gathered}
 \]
 The formal checker generates the graph and integer vectors itself.
-It verifies the four terminal steps by successive sparse products,
-without expanding every four-step path separately.
+It verifies the six terminal steps by successive sparse products.
 
 \begin{theorem}\label{thm:formal-upper}
 For every positive $n$,
 \[
- \mu\leq\frac{147}{40}=3.675,\qquad
- S_n\leq\frac92\left(\frac{147}{40}\right)^{n-1}.
+ \mu\leq\qplus,\qquad S_n\leq3\qplus^{n-1}.
 \]
 \end{theorem}
 \begin{proof}
-Lemma~\ref{lem:terminal-potential} applies with $t=4$.
-The prefactor after absorbing $q^{-4}$ satisfies
+Lemma~\ref{lem:terminal-potential} applies with $t=6$.
+The prefactor after absorbing $\qplus^{-6}$ satisfies
 \[
- \frac{284786048601}{361538007(147/40)^4}<\frac92.
+ \frac{21\,309\,021\,059\,784\,288}
+      {2\,990\,000\,000\,000\,\qplus^6}<3.
 \]
-This proves the pointwise bound when $n-1\geq4$.
-For $0\leq n-1<4$, use $S_n\leq4^{n-1}$.
+This proves the pointwise bound when $n-1\geq6$.
+For $0\leq n-1<6$, use $S_n\leq4^{n-1}$.
 Taking roots gives the bound on $\mu$.
 \end{proof}
 
@@ -628,21 +654,40 @@ The Lean project formalizes the integer-coordinate model of
 Section~\ref{sec:geometry}. It proves validity under rigid changes
 of frame, heredity, submultiplicativity, the growth limit, and the
 pointwise consequence \eqref{eq:fekete-pointwise}.
-The small block constructions and compressed suffix argument then
+The irreducible slab construction and compressed suffix argument then
 give \eqref{eq:formal-bounds}.
 
-The finite checks use \texttt{native\_decide}, as do the existing
-small-count checks. Their trust boundary includes Lean's compiled
-evaluation mechanism. The proofs do not import Python counts or
-floating-point certificate vectors, and their dependencies contain
-no \texttt{sorryAx}. For speed, the upper checker stores coordinates
+The enumeration and upper-potential checks use \texttt{native\_decide},
+as do the existing small-count checks. Their trust boundary includes
+Lean's compiled evaluation mechanism. On the lower side, only the
+coefficient-row check uses native evaluation; the renewal polynomial
+inequality is proved by exact kernel-checked arithmetic.
+Lean recomputes the stated rows; no external count or floating-point
+vector is used as an assumption.
+The theorem dependencies contain no \texttt{sorryAx}.
+For speed, the upper checker stores coordinates
 as triples of integers; its equivalence to the original function-valued
 coordinates and validity predicate is proved.
+The lower checker stores cube occupancy in a byte array and restores
+each entry after a recursive branch. Its correctness proof verifies
+the coordinate indexing, array restoration, and correspondence between
+the counter and a duplicate-free word enumeration. Separate lemmas
+prove collision freedom, conversion to quarter-turn formulas, and
+unique decoding across slab widths.
+Lake compiles this small computation library to native code before
+checking the coefficients; the mathematical library does not need
+native compilation.
+
 Build the project by running \texttt{lake build} in
-\texttt{rubiks-snake/lean}. The combined compressed-prefix certificate
-took about 78 seconds on the development machine.
-The weighted lower certificate took 19 seconds; its induction proof
-compiled in about two seconds.
+\texttt{rubiks-snake/lean}. On the development machine, the slab
+certificate took about 325 seconds and the length-16 compressed-prefix
+certificate about 36 minutes. Integer keys and constant-stack scans kept
+the latter check within a 6 GiB address-space cap, with peak RSS of
+2.30 GiB. The subsequent slab language and lower-bound proofs
+each compiled in about two seconds.
+The five decimal summary theorems are in \texttt{FinalResults.lean}.
+The bounded constant, \texttt{snakeGrowthConstant}, is the limit
+identified by \texttt{tendsto\_countValidFormulas\_rpow}.
 
 The four Python notebooks in \texttt{asymptotic-analysis/} remain
 independent reproductions of the larger finite computations:
@@ -666,15 +711,16 @@ vectors only; a passed exact inequality is the certificate.
 
 Submultiplicativity determines a single exponential growth constant
 and gives the pointwise bound $\mu^{n-1}\leq S_n$.
-Occupied interfaces provide a formally verified lower family beyond
-disjoint plane blocks. On the upper side, a prefix dictionary retains
+Irreducible slab blocks give the lower bound, with backward crossings
+recorded during enumeration. On the upper side, a prefix dictionary retains
 the collision information of short windows with substantially fewer
 states, and terminal weights give a small prefactor.
 
-The formal interval $[3.193,3.675]$ is wider than the interval reported
-by the larger Python computations. Its lower endpoint remains the
-main limitation: the construction allows returns into only the
-preceding plane. Neither interval has width below $0.1$.
+The formal interval $[3.400034903,3.661786723]$ has width
+$0.261751820$. Its lower endpoint matches the larger Python computation,
+and its upper endpoint is smaller. The lower bound still restricts long-range
+interactions between blocks, and the upper bound discards collisions
+beyond its finite memory. A gap below $0.1$ remains open.
 We have not proved a ratio limit, a constant-prefactor asymptotic,
 or an exact counting formula.
 

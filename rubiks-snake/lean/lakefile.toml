@@ -6,6 +6,14 @@ defaultTargets = ["RubiksSnake"]
 name = "RubiksSnake"
 roots = ["RubiksSnake"]
 
+[[lean_lib]]
+name = "RubiksSnakeComputation"
+precompileModules = true
+
+[[lean_lib]]
+name = "RubiksSnakePrunedComputation"
+precompileModules = true
+
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"

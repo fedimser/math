@@ -11,6 +11,8 @@ second step certifies the stronger rate `3.193` on the same block language.
 namespace RubiksSnake
 namespace RecordWeighting
 
+/-- The precomputed image equals the direct sum of length factor times
+successor potential over all fitting record transitions. -/
 lemma image_eq (s : RecordState) :
     image s =
       (((recordTables s.previous).filter (recordFits s)).map
@@ -21,11 +23,14 @@ lemma image_eq (s : RecordState) :
   rw [image, ht, List.filter_map, List.map_map]
   rfl
 
+/-- Every phase-table datum has a rotation word of length two through seven. -/
 private lemma datum_lengths {i : Fin 4} {d : RecordDatum} (hd : d ∈ recordTables i) :
     2 ≤ d.word.length ∧ d.word.length ≤ 7 := by
   obtain ⟨rs, hrs, rfl⟩ := mem_recordTables.mp hd
   exact recordCode_lengths rs hrs
 
+/-- For `n >= 7`, every available block fits the length budget, so the
+language size is the full sum of successor-language sizes over fitting blocks. -/
 lemma language_length_eq (s : RecordState) (n : ℕ) (hn : 7 ≤ n) :
     (recordLanguage s n).length =
       (((recordTables s.previous).filter (recordFits s)).map
@@ -47,16 +52,23 @@ lemma language_length_eq (s : RecordState) (n : ℕ) (hn : 7 ≤ n) :
   rw [hm]
   simp [List.sum_map_ite]
 
+/-- Common integer normalization covering the finite base lengths two through
+eight in the weighted renewal induction. -/
 def baseScale : ℕ := maximumWeight * 3193 ^ 8
 
+/-- The normalization is the uniform potential bound multiplied by `3193^8`. -/
 lemma baseScale_eq : baseScale = maximumWeight * 3193 ^ 8 := rfl
 
 attribute [local irreducible] baseScale maximumWeight weight
 
+/-- The normalization is strictly positive, allowing division in the final
+real-valued lower bound. -/
 lemma baseScale_pos : 0 < baseScale := by
   rw [baseScale_eq]
   exact Nat.mul_pos maximumWeight_pos (by positivity)
 
+/-- Length-two and length-three choices make the scalar record renewal count
+positive for every rotation length at least two. -/
 private lemma renewal_pos (n : ℕ) (hn : 2 ≤ n) : 0 < recordRenewal n := by
   induction n using Nat.strong_induction_on with
   | h n ih =>
@@ -68,6 +80,8 @@ private lemma renewal_pos (n : ℕ) (hn : 2 ≤ n) : 0 < recordRenewal n := by
         rw [recordRenewal, if_neg (by omega : n ≠ 0), if_pos hn]
         positivity
 
+/-- From every listed state and for `n >= 2`, the record language has at
+least `weight s / baseScale` times `3.193^n` words, expressed without division. -/
 lemma weighted_language_lower (n : ℕ) (hn : 2 ≤ n) :
     ∀ s ∈ recordStates,
       weight s * 3193 ^ n ≤ baseScale * 1000 ^ n * (recordLanguage s n).length := by
@@ -129,6 +143,8 @@ lemma weighted_language_lower (n : ℕ) (hn : 2 ≤ n) :
             rw [← hp]
             ac_rfl
 
+/-- Integer form of the uniform `3.193^n / baseScale` lower bound for valid
+`n`-rotation formulas, including lengths zero and one. -/
 lemma count_lower (n : ℕ) :
     3193 ^ n ≤ baseScale * 1000 ^ n * countValidFormulas n := by
   by_cases hn : 2 ≤ n
@@ -156,6 +172,9 @@ lemma count_lower (n : ℕ) :
 
 end RecordWeighting
 
+/-- Weighted occupied-interface blocks certify at least
+`3.193^n / RecordWeighting.baseScale` valid formulas with `n` rotations,
+or `n + 1` wedges. -/
 theorem countValidFormulas_lower_bound_3193_div_1000_with_prefactor (n : ℕ) :
     (1 / (RecordWeighting.baseScale : ℝ)) * (3193 / 1000 : ℝ) ^ n ≤
       countValidFormulas n := by
