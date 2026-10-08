@@ -334,7 +334,7 @@ lemma bridge_concat_valid {a b : List Nat}
 
 /-- Perpendicular-turn compatibility survives concatenation when the second
 word starts with the incoming direction left by the first. -/
-private lemma compatible_append_aux (incoming : Direction) (xs ys : List Direction)
+lemma compatible_append (incoming : Direction) (xs ys : List Direction)
     (hxs : Compatible incoming xs) (hys : Compatible (xs.getLastD incoming) ys) :
     Compatible incoming (xs ++ ys) := by
   induction xs generalizing incoming with
@@ -349,7 +349,7 @@ lemma compatible_concat {a b : List Nat}
     (hb : Compatible 0 (b.map toDirection)) (hlast : a.getLastD 0 = 0) :
     Compatible 0 ((a ++ b).map toDirection) := by
   rw [List.map_append]
-  apply compatible_append_aux 0 _ _ ha
+  apply compatible_append 0 _ _ ha
   have hend : (a.map toDirection).getLastD (0 : Direction) = 0 := by
     change (a.map toDirection).getLastD (toDirection 0) = toDirection 0
     rw [List.getLastD_map, hlast]

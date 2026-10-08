@@ -21,9 +21,9 @@ theorem mu_exists :
         atTop (𝓝 μ) :=
   SnAsymptotic_MuExistence
 
-/-- Fourfold geometric symmetry gives this exact decimal lower bound on `mu`. -/
-theorem mu_lower_bound : (3.4003 : ℝ) ≤ snakeGrowthConstant :=
-  FastLower.growthConstant_lower_bound
+/-- Geometrically separated overhanging caps give this exact lower bound on `mu`. -/
+theorem mu_lower_bound : (3.4505674 : ℝ) ≤ snakeGrowthConstant :=
+  CapLower.growthConstant_lower_bound
 
 /-- The length-sixteen collision-prefix certificate bounds `mu` by this exact decimal. -/
 theorem mu_upper_bound : snakeGrowthConstant ≤ (3.661786723 : ℝ) := by
@@ -32,8 +32,8 @@ theorem mu_upper_bound : snakeGrowthConstant ≤ (3.661786723 : ℝ) := by
 
 /-- Every positive wedge length has the certified lower base, with prefactor one. -/
 theorem Sn_lower_bound (n : ℕ+) :
-    (3.4003 : ℝ) ^ ((n : ℕ) - 1) ≤ (S n : ℝ) :=
-  FastLower.Sn_lower_bound n
+    (3.4505674 : ℝ) ^ ((n : ℕ) - 1) ≤ (S n : ℝ) :=
+  CapLower.Sn_lower_bound n
 
 /-- Every positive wedge length has the certified upper base and uniform prefactor three. -/
 theorem Sn_upper_bound (n : ℕ+) :

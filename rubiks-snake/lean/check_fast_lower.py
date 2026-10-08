@@ -1,4 +1,4 @@
-"""Freshly rebuild the project-owned fast lower-bound proof, one module at a time.
+"""Freshly rebuild the project-owned lower-bound proof, one module at a time.
 
 The pinned compiler and existing third-party dependencies are reused. No
 project-owned build artifacts are copied. Run with the repository's Python
@@ -19,8 +19,8 @@ import time
 
 
 ROOT = Path(__file__).resolve().parent
-TARGET = "RubiksSnake.FastLowerBound"
-NATIVE = {"RubiksSnakeComputation", "RubiksSnakePrunedComputation"}
+TARGET = "RubiksSnake.CapLowerBound"
+NATIVE = {"RubiksSnakeComputation", "RubiksSnakePrunedComputation", "RubiksSnakeCapComputation"}
 
 
 def project_modules(target):
@@ -47,8 +47,8 @@ def project_modules(target):
     return ordered
 
 
-def run(output, seconds):
-    modules = project_modules(TARGET)
+def run(output, seconds, target=TARGET):
+    modules = project_modules(target)
     forbidden = {"RubiksSnake.SlabCountCertificate", "RubiksSnake.ExtendedSlabCertificate"}
     if forbidden.intersection(modules) or any("UpperBound" in module for module in modules):
         raise RuntimeError("the fast proof imports an expensive unrelated certificate")
@@ -81,10 +81,15 @@ def run(output, seconds):
                 command = ["lake", "--no-cache", "build", module + ":shared"]
             else:
                 relative = Path(module.replace(".", "/") + ".lean")
-                target = work / ".lake/build/lib/lean" / relative.with_suffix(".olean")
-                target.parent.mkdir(parents=True, exist_ok=True)
-                libraries = sorted((work / ".lake/build/lib").glob("*.so"))
-                command = ["lean", str(work / relative), "-o", str(target), "-j1", "-M4096"]
+                olean_target = work / ".lake/build/lib/lean" / relative.with_suffix(".olean")
+                olean_target.parent.mkdir(parents=True, exist_ok=True)
+                libraries = [
+                    library
+                    for native in modules
+                    if native in NATIVE
+                    for library in sorted((work / ".lake/build/lib").glob(f"*_{native}.so"))
+                ]
+                command = ["lean", str(work / relative), "-o", str(olean_target), "-j1", "-M4096"]
                 command.extend("--plugin=" + str(library) for library in libraries)
             command_start = time.monotonic()
             process = subprocess.Popen(
@@ -109,7 +114,7 @@ def run(output, seconds):
             records.append({"module": module, "seconds": elapsed, "output": log})
         elapsed = time.monotonic() - start
     report = {
-        "target": TARGET,
+        "target": target,
         "fresh_project_modules": len(modules),
         "reused": "pinned Lean compiler and cached third-party dependencies only",
         "seconds": elapsed,
@@ -130,11 +135,12 @@ def run(output, seconds):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--seconds", type=float, default=120)
+    parser.add_argument("--seconds", type=float, default=300)
+    parser.add_argument("--target", default=TARGET)
     args = parser.parse_args()
     if args.seconds <= 0:
         parser.error("--seconds must be positive")
-    run(args.output, args.seconds)
+    run(args.output, args.seconds, args.target)
 
 
 if __name__ == "__main__":

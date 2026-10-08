@@ -8,7 +8,8 @@ A positive exponential pointwise lower bound passes to the logarithmic
 growth limit. Plane blocks give `mu >= 3.1`; blocks with an occupied
 interface give `mu >= 3.16`. Weighting the same interfaces strengthens the
 bound to `mu >= 3.193`. The fourfold-symmetry slab certificate strengthens
-this to `mu >= 3.4003`, preserving the earlier numerical API as a corollary.
+this to `mu >= 3.4003`. Overhanging transverse caps now give
+`mu >= 3.4505674`, while preserving the earlier numerical APIs.
 -/
 
 namespace RubiksSnake
@@ -42,6 +43,12 @@ theorem snakeGrowthConstant_ge_3400034903_div_1000000000 :
 theorem snakeGrowthConstant_ge_34003_div_10000 :
     (34003 / 10000 : ℝ) ≤ snakeGrowthConstant := by
   convert FastLower.growthConstant_lower_bound using 1
+  norm_num
+
+/-- The fully connected transverse-cap certificate gives the current lower endpoint. -/
+theorem snakeGrowthConstant_ge_17252837_div_5000000 :
+    (17252837 / 5000000 : ℝ) ≤ snakeGrowthConstant := by
+  convert CapLower.growthConstant_lower_bound using 1
   norm_num
 
 end RubiksSnake

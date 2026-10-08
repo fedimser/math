@@ -1,6 +1,6 @@
 import RubiksSnake.SnAsymptoticEasy
 import RubiksSnake.RenewalBounds
-import RubiksSnake.FastLowerBound
+import RubiksSnake.CapLowerBound
 import RubiksSnake.SlabBlocks
 import RubiksSnake.RecordBlocks
 import RubiksSnake.WeightedRecordLowerBound
@@ -29,6 +29,10 @@ first `+y` branch is counted; geometric rotations give four disjoint copies.
 Backward crossings of internal boundaries give unique decoding. The older
 `3.400034903` APIs below follow from this stronger bound without importing
 the expensive original coefficient certificate.
+
+Overhanging transverse caps strengthen the endpoint to `3.4505674`.
+The local recurrence certificate counts uniquely decoded, collision-free
+assemblies of pieces with at most fourteen wedges.
 -/
 
 namespace RubiksSnake
@@ -250,5 +254,16 @@ theorem Sn_lower_bound_34003_div_10000 (n : ℕ+) :
     (34003 / 10000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n := by
   convert FastLower.Sn_lower_bound n using 1
   norm_num
+
+/-- Overhanging transverse caps give the stronger uniform lower rate. -/
+theorem countValidFormulas_lower_bound_17252837_div_5000000 (k : ℕ) :
+    (17252837 / 5000000 : ℝ) ^ k ≤ countValidFormulas k := by
+  convert CapLower.count_lower_bound k using 1
+  norm_num
+
+/-- The cap lower endpoint applies to every positive number of wedges. -/
+theorem Sn_lower_bound_17252837_div_5000000 (n : ℕ+) :
+    (17252837 / 5000000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
+  countValidFormulas_lower_bound_17252837_div_5000000 ((n : ℕ) - 1)
 
 end RubiksSnake
