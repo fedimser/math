@@ -7,8 +7,8 @@ import RubiksSnake.SnAsymptotic_MuExistence
 A positive exponential pointwise lower bound passes to the logarithmic
 growth limit. Plane blocks give `mu >= 3.1`; blocks with an occupied
 interface give `mu >= 3.16`. Weighting the same interfaces strengthens the
-bound to `mu >= 3.193`. The irreducible-slab certificate strengthens this
-to `mu >= 3.400034903`, with its enumeration and geometric injection verified.
+bound to `mu >= 3.193`. The fourfold-symmetry slab certificate strengthens
+this to `mu >= 3.4003`, preserving the earlier numerical API as a corollary.
 -/
 
 namespace RubiksSnake
@@ -32,10 +32,16 @@ theorem snakeGrowthConstant_ge_3193_div_1000 :
     (by norm_num) (by norm_num)
     (fun k => by simpa only [one_mul] using countValidFormulas_lower_bound_3193_div_1000 k)
 
-/-- The checked irreducible-slab enumeration and geometric injection give the current
-unconditional lower endpoint 3.400034903. -/
+/-- The earlier lower endpoint follows from the stronger symmetry-based certificate. -/
 theorem snakeGrowthConstant_ge_3400034903_div_1000000000 :
     (3400034903 / 1000000000 : ℝ) ≤ snakeGrowthConstant :=
-  SlabEnumeration.growthConstant_lower_bound
+  (by norm_num : (3400034903 / 1000000000 : ℝ) ≤ 3.4003).trans
+    FastLower.growthConstant_lower_bound
+
+/-- The fast fourfold-symmetry certificate gives the improved lower endpoint. -/
+theorem snakeGrowthConstant_ge_34003_div_10000 :
+    (34003 / 10000 : ℝ) ≤ snakeGrowthConstant := by
+  convert FastLower.growthConstant_lower_bound using 1
+  norm_num
 
 end RubiksSnake

@@ -1,6 +1,6 @@
 import RubiksSnake.SnAsymptoticEasy
 import RubiksSnake.RenewalBounds
-import RubiksSnake.SlabLowerBound
+import RubiksSnake.FastLowerBound
 import RubiksSnake.SlabBlocks
 import RubiksSnake.RecordBlocks
 import RubiksSnake.WeightedRecordLowerBound
@@ -24,9 +24,11 @@ counts for legal continuations. Weighting those same interfaces improves
 the rate to `3.193`. Submultiplicativity removes the finite induction
 prefactor from the final bounds.
 
-The larger irreducible-slab certificate gives `3.400034903`. Its native
-enumerator is proved to count distinct, compatible, collision-free blocks;
-backward crossings of internal boundaries give unique decoding.
+The fourfold-symmetry irreducible-slab certificate gives `3.4003`. Only the
+first `+y` branch is counted; geometric rotations give four disjoint copies.
+Backward crossings of internal boundaries give unique decoding. The older
+`3.400034903` APIs below follow from this stronger bound without importing
+the expensive original coefficient certificate.
 -/
 
 namespace RubiksSnake
@@ -235,11 +237,18 @@ theorem Sn_lower_bound_3193_div_1000 (n : ℕ+) :
 `3.400034903^k` with prefactor one. -/
 theorem countValidFormulas_lower_bound_3400034903_div_1000000000 (k : ℕ) :
     (3400034903 / 1000000000 : ℝ) ^ k ≤ countValidFormulas k :=
-  SlabEnumeration.count_lower_bound k
+  (pow_le_pow_left₀ (by norm_num) (by norm_num : (3400034903 / 1000000000 : ℝ) ≤ 3.4003)
+    k).trans (FastLower.count_lower_bound k)
 
 /-- The certified slab lower base applies to every positive wedge length with exponent `n - 1`. -/
 theorem Sn_lower_bound_3400034903_div_1000000000 (n : ℕ+) :
     (3400034903 / 1000000000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n :=
-  SlabEnumeration.Sn_lower_bound n
+  countValidFormulas_lower_bound_3400034903_div_1000000000 ((n : ℕ) - 1)
+
+/-- Fourfold geometric symmetry gives the improved uniform lower base 3.4003. -/
+theorem Sn_lower_bound_34003_div_10000 (n : ℕ+) :
+    (34003 / 10000 : ℝ) ^ ((n : ℕ) - 1) ≤ S n := by
+  convert FastLower.Sn_lower_bound n using 1
+  norm_num
 
 end RubiksSnake

@@ -47,22 +47,44 @@ The five summary theorems are in
 the following bounds using exact decimal constants, reusing the existing proofs:
 
 $$
-3.400034903 \leq \mu \leq 3.661786723,
+3.4003 \leq \mu \leq 3.661786723,
 \qquad
-(3.400034903)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
+(3.4003)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
 \quad(n\geq1).
 $$
 
-The [irreducible-slab construction](lean/RubiksSnake/SlabLowerBound.lean)
-verifies the master paper's lower endpoint. It uses slab widths 0, 1, and 2,
-with internal-edge cutoffs 28, 20, and 18. A restoring byte-array traversal
-checks the exact coefficients in about five minutes. The small
-[computation library](lean/RubiksSnakeComputation.lean) is compiled to native
-code automatically by Lake; the mathematical proofs do not require native
-compilation of mathlib.
+The [fast lower proof](lean/RubiksSnake/FastLowerBound.lean) uses
+[fourfold geometric symmetry](lean/RubiksSnake/BridgeSymmetry.lean): count
+only blocks whose first step is `+y`, then rotate them about x. The four
+copies are disjoint because their first steps differ. This multiplies every
+coefficient by four without repeating the search. The checked seed widths
+are 0, 1, 2, and 3, with internal-edge cutoffs 20, 20, 18, and 21.
+Budget pruning only needs to give undercounts.
+
+The new coefficient certificate checks in about 50 seconds. A fresh,
+serial rebuild of **all 24 project-owned lower-proof modules**, including
+both native computation libraries and the certificate, passed in
+**117.61 seconds**, with maximum child RSS about **3.17 GiB**. This timing
+reuses the pinned Lean compiler and cached third-party dependencies, but
+no project-owned build artifacts. Reproduce it from the repository root:
+
+```bash
+.venv/bin/python rubiks-snake/lean/check_fast_lower.py
+```
+
+For an ordinary incremental build, use `lake build RubiksSnake.FastLowerBound`
+from the Lean directory. For fresh checks of individual files, use
+`lake lean FILE.lean`, which loads the native libraries; bare
+`lake env lean FILE.lean` can fall back to much slower interpreted execution.
+
+The original five-minute
+[slab certificate](lean/RubiksSnake/SlabCountCertificate.lean) remains available
+for historical and experimental modules, but is no longer imported by the
+default build or required by the best lower bound. Its public numerical
+APIs are preserved as corollaries of the stronger result.
 [Enumeration correctness](lean/RubiksSnake/SlabEnumeration.lean),
 [collision freedom](lean/RubiksSnake/SlabBlockValidity.lean), and
-[unique decoding](lean/RubiksSnake/SlabLanguage.lean) are proved separately.
+[unique decoding](lean/RubiksSnake/BridgeCode.lean) are proved separately.
 A block is selected by requiring a backward crossing of every internal slab
 boundary, avoiding the subtraction recurrence used by the Python certificate.
 
@@ -85,8 +107,10 @@ The length-16 finite check took about 36 minutes, with peak RSS of 2.30 GiB unde
 6 GiB address-space cap. The smaller
 [length-14 certificate](lean/RubiksSnake/ForbiddenPrefixFourteenUpperBound.lean)
 matches the master paper's upper endpoint 3.667542939 and takes about four minutes.
-The strongest formal bounds match the master paper's lower endpoint and improve
-its upper endpoint. Their remaining base gap is 0.261751820, not yet below 0.1.
+The strongest formal bounds improve both endpoints of the original notebook
+certificate. Their remaining base gap is 0.261486723, not yet below 0.1.
+The lower notebooks retain the historical 3.400034903 computation; they do
+not reproduce the new fourfold certificate.
 
 [Submultiplicativity](lean/RubiksSnake/SnAsymptotic_MuExistence.lean) also gives
 $\mu^{n-1}\leq S_n$ at every positive length. Consequently, any lower bound on

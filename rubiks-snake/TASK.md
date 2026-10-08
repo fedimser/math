@@ -2,6 +2,14 @@
 
 ## Objective and stopping condition
 
+**Latest focused request (2026-10-07 evening): achieved.** The user asked for
+a lower bound strictly above 3.4 with a Lean check below two minutes.
+The new unconditional bound is **3.4003**. A fresh serial rebuild of its
+entire 24-module project-owned dependency chain took **117.61 seconds**,
+including both native computation libraries and the coefficient check.
+See [the fast lower proof](#fast-fourfold-lower-proof-2026-10-07-evening).
+The longer-term strict-gap objectives below remain open.
+
 Continue the existing research and Lean formalization; do not restart from the
 original baseline or wait for another confirmation. The user has authorized
 continued work. An exact formula for the number of snakes would be welcome, but
@@ -19,11 +27,15 @@ an improvement that leaves either gap at least 0.1 does not finish the task.
 The user specifically expects new mathematical methods: simply increasing the
 old slab cutoffs or collision windows is unlikely to suffice.
 
-The most recent turn requested documentation and this handover, rather than
-another research run. All 957 declarations across the 57 project-owned Lean
-sources now have docstrings. The documentation audit found no changes to
-non-comment code tokens, and all 57 files passed Lean's parser. Their statements
-and proof code were preserved; expensive native certificates were not rerun.
+The earlier documentation audit covered all 957 declarations across the 57
+project-owned Lean sources: all have docstrings, non-comment code tokens were
+unchanged, and all files passed Lean's parser. A subsequent research session
+revalidated the baseline builds but found no new certified bound. Its
+unsuccessful directions are recorded below so they are not repeated. A later
+2026-10-07 request resumed research, focusing on a lower bound of at least 3.5.
+The [earlier research session](#new-methods-tested-2026-10-07) produced a new
+exact-arithmetic candidate and a kernel-checked FCC obstruction, but did not
+reach 3.5. The later fast-proof session improved the certified lower endpoint.
 
 ## Verified results
 
@@ -34,17 +46,18 @@ The five public summary theorems are in
 | Theorem | Statement |
 | --- | --- |
 | `mu_exists` | The root growth rate of valid rotation-word counts exists and is positive. |
-| `mu_lower_bound` | `3.400034903 <= snakeGrowthConstant` |
+| `mu_lower_bound` | `3.4003 <= snakeGrowthConstant` |
 | `mu_upper_bound` | `snakeGrowthConstant <= 3.661786723` |
-| `Sn_lower_bound` | `3.400034903^(n - 1) <= S_n` |
+| `Sn_lower_bound` | `3.4003^(n - 1) <= S_n` |
 | `Sn_upper_bound` | `S_n <= 3 * 3.661786723^(n - 1)` |
 
 The last two statements hold for every positive wedge length. Both current
-base gaps are **0.261751820**. Keep exactly these five summary theorems, with
+base gaps are **0.261486723**. Keep exactly these five summary theorems, with
 exact decimal real numerals and proofs reusing the underlying results.
 
-The master paper's lower endpoint, 3.400034903, has been formalized. Its upper
-endpoint, 3.667542939, has also been formalized and improved to 3.661786723.
+The original lower endpoint, 3.400034903, has been formalized and improved to
+3.4003. The original upper endpoint, 3.667542939, has also been formalized and
+improved to 3.661786723.
 Do not revert to the earlier 3.193 lower bound.
 
 With the present upper endpoint, a proved lower endpoint of **3.562** would
@@ -98,13 +111,15 @@ lake build RubiksSnake.PrunedSlabEnumeration RubiksSnake.ExtendedSlabCertificate
 Start by validating these commands and reading
 [paper.tex](paper-draft/paper.tex), the certificate notebooks in
 [asymptotic-analysis/](asymptotic-analysis/), and the relevant Lean modules.
-The last completed full root build passed with 3,062 jobs; the Python suite
-previously passed all 36 tests, and the six-page paper built successfully.
-These are historical validations, not a claim that every experimental Lean
-file currently builds.
-During handover, the five theorem statements and their dependency audit were
-checked again against the existing compiled results. This did not rerun the
-native certificates or constitute a fresh full project build.
+The subsequent research session reran the baseline commands successfully:
+the Python suite passed all 36 tests, `latexmk` reported the paper PDF up to
+date, and the root Lean build passed with 3,062 jobs. Separate builds of
+`RubiksSnake.PrunedSlabEnumeration` and `RubiksSnake.ExtendedSlabCertificate`
+each passed with 3,013 jobs. These were incremental builds using existing
+artifacts, not fresh executions of the expensive native certificates.
+The earlier five-statement/dependency audit remains separate from these builds.
+In particular, building `ExtendedSlabCertificate` does not discharge
+`RowsVerified`, and `ExtendedSlabLowerBound` was not revalidated in this session.
 
 **Change into the Lean project before invoking Lake.** The pinned toolchain
 and mathlib version are 4.33.1, while Elan outside the project has selected
@@ -127,6 +142,13 @@ their expensive checks.
 
 ### Existing lower bound
 
+The current default proof is
+[FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean), supported by
+[BridgeSymmetry.lean](lean/RubiksSnake/BridgeSymmetry.lean),
+[QuarterSlab.lean](lean/RubiksSnake/QuarterSlab.lean), and
+[FastLowerCertificate.lean](lean/RubiksSnake/FastLowerCertificate.lean).
+It does not import the older expensive coefficient certificate described next.
+
 [RubiksSnakeComputation.lean](lean/RubiksSnakeComputation.lean) is a small
 separately precompiled library for restoring byte-array enumeration.
 [SlabEnumeration.lean](lean/RubiksSnake/SlabEnumeration.lean) proves its counting
@@ -138,7 +160,8 @@ representation to collision-free geometry.
 [SlabCountCertificate.lean](lean/RubiksSnake/SlabCountCertificate.lean) checks
 widths 0, 1, and 2 at internal-edge cutoffs 28, 20, and 18. That native check
 took about 325 seconds. [SlabLowerBound.lean](lean/RubiksSnake/SlabLowerBound.lean)
-derives the currently certified endpoint.
+derives the historical endpoint. These older modules remain available for
+experiments, but the default root no longer imports them.
 
 For a slab, `width = forward progress - 1`; internal-edge length `k` gives block
 length `k + 1`. Irreducibility requires a backward crossing of every internal
@@ -267,6 +290,139 @@ the indexing and geometry independently at small sizes, analyze every relevant
 strongly connected component, and distinguish a frozen finite subgraph from a
 complete state space. Floating-point spectral radii only screen candidates.
 
+## Additional dead-end screens (recorded 2026-10-07)
+
+**Do not restart the following searches or merely increase their cutoffs.**
+They produced no new Lean theorem, unconditional certificate, or numerical
+endpoint. The paper and five-result facade were left unchanged. A new
+mathematical ingredient is needed before revisiting them; larger enumeration
+alone repeats the approach rejected in the final research-direction section.
+
+Here "dead end" describes the tested approach, not a proof that every member
+of an infinite family fails. In particular, finite count ratios, floating-point
+eigenvalues, particle estimates, and low rates of truncated subgraphs are
+**not rigorous upper bounds** on the full family or on `mu`. The previous
+session's closing summary overstated some of these as exclusions; use the
+precise scopes below instead.
+
+### Low-entropy and finite-count screens
+
+| Direction | Parameters, observation, and reason not to repeat |
+| --- | --- |
+| Longer center-simple plane walks | The cutoff-30 renewal root was approximately `3.133235933906813`. This is a truncated, stricter subclass, not the infinite plane constant: the script forbids all repeated centers and counts only 64 length-seven blocks, whereas the wedge-aware plane code has 72. It did not improve the existing bound. |
+| Direction-only ranks | Allow `d -> e` when `d` and `e` are perpendicular and `s*d_x + rank(e) - rank(d) >= 1`. Scanning rank ranges 1 through 6 and scales 1 through 12 gave maximum numerical radius about `2.455291193596027`, even before collision exclusions. The initial scan incorrectly fixed `rank(+x)=0` and returned zero; the corrected scan normalizes the minimum rank to zero. Do not reuse the initial conclusion. |
+| Two spatial credits | Independent x/y credits with range 1 through 10 and scales 1 through 9 gave maximum numerical radius `2.9315639937465936`. The tested finite automata lose too much entropy before adding collision checks; larger ranges were not excluded. |
+| Prudent turning walks | Every step is perpendicular to its predecessor and cannot point along a ray containing an earlier center. Python and C++ counts agreed through 11 steps. The successive ratio fell from `3.579510961` at step 11 to `3.558721117` at step 13 and `3.525827838` at step 18; the last count was `14331246192`. The early near-target ratios were misleading, but their decline is not a proved asymptotic ceiling. |
+| Outward bounding-box walks | Requiring every move to extend a global box face was much too restrictive. Dynamic programming through 80 steps matched `2^(n+3)-16` for `n >= 2`, suggesting growth 2, not a target candidate. This was not formalized. |
+| One exact count plus submultiplicativity | The stored value `S_28 = 2377810831870022` gives root `S_28^(1/27) = 3.7109751672587388`, worse than the existing upper bound. None of the stored finite roots closes the gap. These stored counts were not newly certified in Lean. |
+| Fixed-length raw slab codes | Equal-length blocks avoid variable-length decoding ambiguity, but no useful new coefficient was obtained. Width zero through internal length 28 gave a best coefficient root of 2. The unpruned width-one/cutoff-23 Python run was stopped after 600 seconds without a row; the planned wider runs were not reached. This is a computational dead end for that implementation, not an exclusion of all fixed-length codes. |
+
+### Bounded potential with a direction suffix
+
+The proposed invariant uses a credit `0 <= r <= R` and update
+`r' = max(0, r + 1 - s*delta_x)`, rejecting `r' > R`. Thus `s*x + r`
+increases by at least one per step. A return to the same center can span at
+most `R` steps, so retaining and checking the last `R` directions is enough
+to forbid every center repetition. This targets a center-simple subclass;
+it does not exploit complementary wedges.
+
+The optimistic credit/direction automaton, which ignores collisions, first
+crossed the target in the scan at `R=15, s=7`, with numerical radius
+`3.577409667479997`. That headroom did not survive the attempted construction:
+
+- Direct Python history expansion was unbounded and failed or was interrupted.
+  **Do not rerun that prototype as written.**
+- C++ expansions at ranges 15 and 16 hit a 30-million-state guard before
+  closure. Quotienting by all eight signed transverse-axis symmetries still
+  hit the guard at range 15. These are size failures, not complete graphs.
+- A five-million-state breadth-first subset seeded with empty histories
+  contained only transient states and was acyclic. Its zero rate says nothing
+  about the full recurrent language; power iteration also lacked a zero-norm
+  guard in that discarded prototype.
+- Seeding full histories from the period-seven word
+  `(+x,+y,+x,+y,+z,+x,+y)` and its credit cycle produced a capped subgraph with
+  numerical rate about `1.3478528`. There was no all-SCC certificate or
+  complete-family exclusion.
+- A fixed population of 500,000 particles over 500 steps, with random seed
+  `20261006`, sampled the range-15/scale-7 language at a rate near `3.342`.
+  This is a stochastic screen, not a certified Perron value, lower bound,
+  or upper bound.
+
+The method neither supplied the target nor avoided large state spaces.
+Do not repeat capped breadth-first discovery or treat the optimistic
+`3.5774` as a collision-free rate.
+
+### Corner-to-corner box blocks: reject the raw-mass false positive
+
+This was the last attempted new separator construction. A center-simple path
+starts at its coordinatewise minimum and ends at its coordinatewise maximum.
+Translated consecutive boxes can meet only at their shared endpoint, offering
+a simple geometric separation argument. The script counted paths with first
+step `+x` through **18 center steps**; conversion to rotation/wedge indexing,
+boundary frames, and unique decoding was not formalized.
+
+Let `A_n` count those paths ending in direction `+x` and `B_n` those ending
+in `+y`. The proposed switching-frame row totals were `C_n = 2*A_n + 4*B_n`.
+Their raw sum at `q=3.562` reached `1.512475819987` through length 18, and
+already exceeded one through length three. **This is not a lower certificate:**
+variable-length blocks admit multiple decompositions of the same path.
+
+The candidate scalar primitive extraction was
+`I_n = C_n - sum_{1 <= k < n} I_k*C_(n-k)`. It returned
+`I_1=2`, `I_2=I_3=I_4=0`, `I_5=8`, and `I_18=5969804`.
+The resulting sum `sum_{n=1}^{18} I_n / 3.562^n` was only
+**`0.606474456896`**, far below one. No tail bound or independent proof that
+this scalar extraction describes the intended geometric code was supplied.
+Do not present these as certified primitive counts or resurrect the raw sum
+as a proof. The finite proposal failed; excluding the infinite box family
+would require an additional argument.
+
+### Loop erasure and the two-midpoint FCC obstruction
+
+Ordinary chronological loop erasure does not preserve perpendicularity:
+erasing the middle loop in
+`(+x,+y,+z,-y,-z,+x)` leaves `(+x,+x)`. The literature search did not supply
+a rigorous adaptation of the loop-erasure lower bounds to this constraint.
+
+Pairing cubic steps gives FCC edges with two possible midpoints. The tempting
+claim that every self-avoiding FCC path has a center-simple perpendicular
+cubic lift is false. An explicit FCC path, all in `z=0`, is
+
+```text
+(0,0,0), (1,1,0), (2,0,0), (1,-1,0), (2,-2,0), (3,-1,0).
+```
+
+Every edge uses the x/y axes. Perpendicularity forces all five edges to use
+the same first axis. In the x-first lift, midpoint `(1,0,0)` repeats; in the
+y-first lift, midpoint `(2,-1,0)` repeats. This refutes the universal
+**center-simple** lifting claim, not all valid snake lifts: complementary
+wedges may share a center. It does not exclude every two-midpoint FCC method.
+
+### Artifacts and resource lessons
+
+Exploratory sources remain outside Git at:
+
+```text
+/home/dima/.copilot/session-state/6a3e2014-c618-4809-b2dc-607520fcdf78/files/
+```
+
+They include `credit_search.py`, `direction_rank_search.py`,
+`multi_credit_search.py`, `plane_walk_search.py`, `potential_suffix.cpp`,
+`prudent_count.py`, `prudent_count.cpp`, `box_outward_count.py`, and
+`corner_blocks.cpp`. Scripts were overwritten during experimentation; in
+particular, `potential_suffix.cpp` now contains the particle screen, not the
+earlier graph builders. The numbers above are recorded session outputs, not a
+checked certificate archive. No research process was left running, and the
+temporary executables were removed.
+
+Later runs used explicit per-process address-space caps of at most 8 GiB;
+the smaller samplers and depth-first searches used 1 or 2 GiB caps. Early
+Python graph prototypes had no safe state guard. Do not assume that any
+archived script is safe to rerun or scale up: budget all retained states and
+temporary copies, enforce limits, and keep aggregate usage below **10 GB**.
+No new verified mathematical milestone from this session was added to
+[ai-log.txt](ai-log.txt).
+
 ## Local research archive
 
 Prior work has persistent artifacts outside Git at:
@@ -348,3 +504,304 @@ genuinely different approach.
 After finding such proof, as long as you can make sure that these expenseive 
 computations are not needed anymore for best bound, you should remove these expensive computations.
 The proof should be more mathematical and creative, rathern then relying on precomputing numbers of large snakes.
+
+## Memory usage
+You are running on system with 16GBof memory
+Whatever you do, don't exceed 10GB of memory usage.
+
+## New methods tested 2026-10-07
+
+**Historical outcome of the morning session:** the certified lower bound
+remained 3.400034903. None of the
+constructions below reached 3.5. In particular, the new number 3.437532869 is
+an external exact-arithmetic **candidate**, not a new Lean theorem about `mu`.
+The paper and five-result facade were deliberately left unchanged.
+
+### Transverse-bridge resummation: a new candidate, not a longer slab search
+
+Instead of enumerating entire long x-slabs, build them from short pieces
+separated in y. A head enters by +x and exits by +y; middle pieces enter and
+exit by +y; a tail enters by +y and exits by +x at the last x layer. Each
+piece stays in `0 <= x <= w`, has y-width 0, 1, or 2, and crosses every
+internal y cut backwards. Enumerating pieces of at most **18 wedges** gives
+a finite library; arbitrarily many middle pieces are then summed by a
+transfer matrix. This resums unbounded total lengths rather than raising
+the old whole-slab enumeration cutoff.
+
+The state is the current x coordinate and the mask of x cuts already crossed
+backwards. Mask updates are unions. Requiring the full mask at the tail makes
+the resulting x block irreducible. There are `(w + 1) * 2^w` states at width
+`w`, hence **769 states** over widths 0 through 6. The equations are
+`F = T + M F`, with head mass `H F`. Their diagonal mask blocks have size
+only `w + 1`.
+
+The intended geometric and decoding argument is:
+
+- Consecutive pieces occupy disjoint y layers; their connecting +y edge
+  checks the boundary orientations without sharing an occupied cube.
+- Cutting at every y separator recovers the head, middle pieces, and tail.
+  Their internal backward-crossing condition prevents alternative cuts.
+- Reflecting y gives a second, disjoint family, since every block has at
+  least one separator and hence strictly positive or negative y progress.
+- Retain only total lengths above 29, 21, and 19 at x widths 0, 1, and 2,
+  respectively, before adjoining the existing certified coefficient rows.
+  This makes the old and new sets disjoint by length. No raw-mass addition
+  or unproved subtraction of overlapping languages is used.
+- Finally use the existing primitive-x-bridge decoding principle to
+  concatenate blocks of different x widths.
+
+The short-piece counter and the transfer counting/geometry argument have
+**not** been formalized in Lean. The external checks establish:
+
+| Check | Result |
+| --- | --- |
+| Independent coordinate/face-set oracle, x widths 0 through 6, y widths 0 through 2, through 8 wedges | All 1,236 nonzero piece coefficients agree, including the zero-entry support check. |
+| Complete short-grammar word checks | 151, 1,287, and 966 distinct words at x widths 0, 1, and 2; piece cutoff 6 and total cutoffs 10, 10, and 14. Geometry, x irreducibility, coefficient counts, and exact y-separator decoding all pass. |
+| Combined polynomial through total length 96 | Exact rational root bracket **(3.437532869, 3.437532870)**. |
+| Infinite grammar at `q = 7/2` | Integer supersolutions check **all 769 states** and give combined renewal mass **< 891/1000 < 1**. |
+
+The last check is stronger than observing that the degree-96 polynomial
+fails at 3.5: it covers arbitrarily many middle pieces from these saved
+libraries. It is an exact algebraic exclusion of **this supplied grammar**,
+not an upper bound on the full x-slab families or on `mu`. The floating
+combined mass is about 0.890313131142 at 3.5. Increasing only the number of
+transfer iterations or the final polynomial degree cannot make this grammar
+reach the target.
+
+The seven width-0-through-6 short-piece enumerations ran serially in about
+120.55 seconds total, using about 4.3 MiB peak RSS. The degree-96 integer
+coefficient/root computation took about two seconds and 34 MiB. This is a
+potentially reusable counting method, but a richer construction is needed
+before investing in its Lean geometric formalization.
+
+### Two-midpoint FCC lifting: the complementary-wedge loophole is closed
+
+The earlier five-edge planar example has **two valid wedge-aware lifts**.
+It remains only a counterexample to center-simple lifting.
+
+A different, simple eight-edge FCC path has **no valid lift**, even with
+complementary wedges allowed:
+
+```text
+(0,0,0), (-1,0,-1), (-2,0,0), (-1,-1,0), (-2,-1,-1),
+(-2,-2,0), (-3,-2,1), (-3,-1,0), (-2,-1,1).
+```
+
+An exact 2-SAT model uses one bit for each of the two midpoint choices.
+Adjacent-edge clauses forbid nonperpendicular joins; nonadjacent-edge
+clauses forbid incompatible wedges at a shared midpoint. A separate
+coordinate/face-set oracle checked all 256 assignments to this path and
+found zero lifts. Small random-path controls also checked SAT against
+exhaustive geometry; their sampling is not used as proof.
+
+There is a short contradiction behind the finite check. Number edges
+0 through 7, with midpoint bit 0 choosing the smaller first-axis index.
+Perpendicularity forces `b1 = b0`. If `b2 = 0`, a collision forces `b0 = 1`
+while a turn constraint forces `b1 = 0`, so `b2 = 1`. Two more collision
+constraints then force `b4 = 0` and `b7 = 1`. The intervening turn
+constraints force `b5 = 0`, then `b6 = 0`, then `b7 = 0`, a contradiction.
+
+[FCCLiftObstruction.lean](lean/RubiksSnake/FCCLiftObstruction.lean) now
+formalizes this example, including distinct backbone vertices, FCC edge
+geometry, exhaustiveness and realizability of both midpoints, and
+`no_valid_lift`. It tests only internal wedges, so changing endpoint faces
+cannot repair the obstruction. All five theorems use **kernel `decide`**,
+not `native_decide`; the dependency audit reports only `propext`,
+`Classical.choice`, and `Quot.sound`. The targeted module build took about
+7.43 seconds, with 2.33 GiB peak RSS.
+
+This rules out lifting *every* FCC self-avoiding path. It does not rule out
+restricted FCC families, weighted lifting estimates, or an FCC-based lower
+bound with an additional geometric ingredient. The module is not imported
+by the default root; validate it explicitly with
+`lake build RubiksSnake.FCCLiftObstruction`.
+
+### Self-avoiding planar projections: an analytic ceiling
+
+Another proposed family deletes z steps and requires the resulting planar
+path to be self-avoiding. There can be at most one z step between planar
+steps. At wedge/step fugacity `t`, a projected straight continuation has
+weight `s = 2*t^2`, and either projected left or right turn has weight
+`a = t + 2*t^2`. Endpoint choices change only a fixed prefactor.
+
+Even the relaxation that forbids only three consecutive left turns or
+three consecutive right turns (the four-edge projected square) is too
+small. Its three-state weighted matrix is
+
+```text
+M = [[s, 2a, 0], [s, a, a], [s, a, 0]].
+```
+
+The threshold satisfies
+`q^6 - q^5 - 5*q^4 - 6*q^3 - 10*q^2 - 8*q - 8 = 0`;
+an exact bracket is **(3.362208006, 3.362208007)**. In particular, at
+`q = 17/5`, the positive vector
+`(1, 21200/26281, 14450/26281)` satisfies
+`v - M*v = (557159/7595209, 0, 0)`. Every row reaches the first state, so
+the weighted series converges. This gives a small analytic reason not to
+enumerate more projected self-avoiding paths: this entire subclass cannot
+improve even the current lower endpoint. This argument is not Lean-formalized.
+
+### Coarse-box first-exit codes: inexpensive optimistic screening
+
+Partition space into fixed cubic boxes. A local block starts at any incoming
+face port and first exits through a positive-coordinate face; negative
+boundary exits are rejected, but backward steps inside the box are allowed.
+Box coordinates then increase, so boxes cannot be revisited and first-exit
+decoding is unambiguous. Unlike the earlier corner-to-corner proposal,
+individual block endpoints need not be coordinatewise extrema.
+
+There is also a simple whole-family optimistic ceiling for small boxes.
+For side `b`, the one-axis residue walk has positive steps with wraparound
+and negative steps killed at residue zero. Its positive eigenvector is
+`u_i = sin((i+1)*pi/(b+2))`, with eigenvalue `2*cos(pi/(b+2))`.
+The product of three such vectors, independent of the incoming axis,
+gives the perpendicular three-dimensional walk eigenvalue
+`4*cos(pi/(b+2))`: each step has two allowed outgoing axes. Thus sides
+at most 4 cannot reach 3.5 even with unbounded block lengths and no
+collision checks; at side 4 the ceiling is `2*sqrt(3) < 3.5`.
+
+Before enumerating valid blocks, dynamic programming counted the relaxation
+that ignores **all** within-box collisions. At `q = 3.5`, sides
+3, 4, 5, 6, 8, 10, and 12, and cutoffs through 24 wedges, its largest tested
+weighted radius was only about **0.756995235254** (side 5, cutoff 24).
+Longer optimistic cutoffs sometimes exceed one, but include colliding
+walks and give no lower certificate. An all-face, uniform-direction-weight
+variant was also screened, without finding useful short-block headroom.
+These are numerical parameter screens, not complete-family exclusions.
+No expensive collision-aware enumeration was launched.
+
+### Reproduction, validation, and resource limits
+
+Sources and data for this session are preserved outside Git in:
+
+```text
+/home/dima/.copilot/session-state/81f1076b-6f9f-4016-af64-9fac1441b9f9/files/
+```
+
+Important files are `transverse_bridges.cpp`, `transverse_resum.py`,
+`transverse_oracle.py`, `transverse_upper_certificate.py`,
+`exact_research_checks.py`, `transverse-w*-r2-j18.json`,
+`transverse-exact-candidate.json`, `transverse-upper-certificate.json`,
+`transverse-piece-oracles.jsonl`, `transverse-whole-grammar-oracle.jsonl`, `fcc_lifts.py`,
+`fcc-lifts-result.jsonl`, `fcc-lift-audit.log`, `coarse_boxes.py`, and
+`coarse-boxes-results.jsonl`. The C++ executable was removed after use;
+rebuild it with `g++ -std=c++20 -O3 -Wall -Wextra -Werror`.
+
+Run Python from the repository root with `.venv/bin/python`. The resummation
+script accepts the seven width-specific JSON files; the exact-check script
+also accepts `--length 96 --output OUTPUT.json`; the upper-certificate
+script requires `--output OUTPUT.json`. Running the oracle without a file
+checks complete short grammar words; with a coefficient file it checks
+short individual pieces. These scripts are research artifacts, not trusted
+inputs to a Lean lower-bound theorem.
+
+All numerical experiments ran **one at a time**, without subagents or
+parallel numerical workers, under address-space limits of at most
+2,000,000,000 bytes. Lean builds/checks also ran serially; the largest
+measured Lean RSS in the session was about 3.65 GiB during the trial of the
+kernel proof, below the 10 GB budget. The baseline Python suite passed all
+36 tests, the paper build was up to date, and the root and existing
+experimental Lean targets passed their incremental builds. The new FCC
+module and its five-theorem dependency audit passed separately.
+
+## Fast fourfold lower proof: 2026-10-07 evening
+
+**Verified result: `3.4003 <= mu` and `3.4003^(n-1) <= S_n` for every
+positive `n`.** This is stronger than the previous 3.400034903 endpoint.
+The mathematical saving is a free fourfold rotation action on the code,
+proved at the geometric-word level rather than assumed by the counter.
+
+### Argument and proof dependencies
+
+1. A seed x-bridge starts with incoming +x and mandatory first step +y.
+   Its remaining suffix is counted by the existing restoring traversal,
+   with budget pruning used only to obtain an undercount.
+2. Rotate by `(x,y,z) -> (x,-z,y)`. This preserves perpendicularity,
+   complementary-wedge disjointness, all x-prefix heights, and hence
+   irreducibility. The four copies start in +y, +z, -y, and -z, so they
+   are disjoint. Each seed length coefficient can be multiplied by four.
+3. Combine widths 0, 1, 2, and 3. Total x height separates the four
+   seed lists; the existing primitive-bridge argument uniquely decodes
+   mixed-width concatenations.
+4. The internal-edge cutoffs are **20, 20, 18, and 21**. The four quarter
+   rows are checked in a single sequential `native_decide` conjunction.
+   `Elab.async` is disabled in that certificate. There is no unproved
+   symmetry assumption, external-count hypothesis, or pruning-completeness
+   requirement.
+5. The degree-22 renewal inequality at **34003/10000** is checked by
+   kernel arithmetic. The generic bridge-code theorem gives the lower
+   bound on `mu`; Fekete gives the uniform pointwise bound with prefactor one.
+
+The dependency audit confirms that the symmetry, undercount, and polynomial
+theorems use only standard logical axioms. The final bounds additionally use
+the new native row check and the pre-existing small native checks in the
+growth-existence development. No `sorryAx`, old slab-row check, external-count
+assumption, or unchecked replacement occurs in the new lower-bound dependency
+chain.
+
+The supporting modules are
+[BridgeSymmetry.lean](lean/RubiksSnake/BridgeSymmetry.lean),
+[QuarterSlab.lean](lean/RubiksSnake/QuarterSlab.lean),
+[FastLowerCertificate.lean](lean/RubiksSnake/FastLowerCertificate.lean), and
+[FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean).
+The old public rational-bound APIs remain available and now follow from
+the stronger result. The five-theorem facade has been updated without
+changing its size or the upper endpoint.
+
+This still uses finite enumeration. It is not a purely analytic proof:
+fourfold geometric symmetry replaces three quarters of the search.
+The new coefficient check takes about **50--51 seconds**, instead of
+the historical 325-second check. The 36-minute upper certificate remains
+necessary for the best upper endpoint and was not removed.
+
+### Exact timing requirement
+
+Run from the repository root:
+
+```bash
+.venv/bin/python rubiks-snake/lean/check_fast_lower.py \
+  --output /tmp/fast-lower-build.json
+```
+
+The [fresh-check script](lean/check_fast_lower.py) copies the 24 required
+project-owned sources and the unchanged pinned dependency configuration to
+a temporary directory. It reuses cached **third-party** dependencies, but
+copies no project-owned proof or native-library artifacts. It rebuilds the
+two native libraries and checks every source in dependency order, one job
+at a time, with one Lean thread and a 4096 MiB Lean heap limit.
+The temporary directory is removed on success or failure, and a timed-out
+process group is terminated before cleanup.
+
+The completed run took **117.609593850 seconds**. Maximum child RSS was
+**3,324,488 KiB**, about **3.17 GiB**. The final native coefficient check
+took 51.113 seconds in that run. This is a fresh check of the lower proof's
+entire project-owned chain, not an incremental build, and not a clean build
+of mathlib or the whole repository. Timing is machine-dependent and the
+margin below two minutes is small.
+
+The report is saved as `files/fast-lower-fresh-build.json` in this session's
+artifact directory listed above. The exact statements, numerical gap, and
+dependencies are checked by `files/fast_lower_audit.lean`, with output in
+`files/fast-lower-audit.log`. The final default Lean build passed, all
+36 Python regression tests passed, and the updated seven-page paper built
+successfully with resolved cross-references.
+
+### Lessons from the timing probes
+
+- Use `lake lean FILE.lean` or a normal Lake target when checking native
+  computations. `lake env lean FILE.lean` does not automatically initialize
+  the precompiled computation plugins and can be much slower. Several early
+  probes were stopped at 120 seconds for this reason; they are not valid
+  measurements of the compiled algorithm.
+- When checking sources directly, initialize both freshly built computation
+  libraries with Lean's `--plugin` flag. Merely opening one shared library
+  does not reproduce the normal Lake setup.
+- An address-space limit on the Lake coordinator caused thread-creation
+  failures even with single-threaded child Lean arguments. The successful
+  fresh check bounds each Lean job's heap instead; all jobs are serial and
+  measured memory is well below 10 GB.
+- Repeated Lake startup for every single module added enough overhead to miss
+  120 seconds. The successful script obtains the environment once, uses Lake
+  for native library builds, and invokes the pinned Lean checker directly for
+  the remaining sources. It does not skip any project-owned proof.

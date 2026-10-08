@@ -29,10 +29,11 @@ $\mu^{n-1}\leq S_n$ at every positive length.
 A Lean formalization establishes
 $q_-\leq\mu\leq q_+$ and
 $q_-^{n-1}\leq S_n\leq3q_+^{n-1}$, where
-$q_-=3.400034903$ and $q_+=3.661786723$.
+$q_-=3.4003$ and $q_+=3.661786723$.
 The lower construction concatenates irreducible slabs. Recording a
-backward crossing of each internal boundary allows direct enumeration
-of these blocks and proves unique decoding.
+backward crossing of each internal boundary proves unique decoding.
+We enumerate one initial transverse direction; four disjoint rotations
+about the bridge axis supply the full coefficients.
 The upper proof uses $4\,748\,260$ suffix states to recognize short
 collision patterns. Both arguments use exact finite checks in Lean.
 The slab counter is compiled to native code, with separate proofs of
@@ -74,7 +75,7 @@ the weakly directed walks of~\cite{bacher2011}, provide related examples
 of the latter approach; their two-dimensional growth constants do not
 apply to this model.
 
-Put $\qminus=3.400034903$ and $\qplus=3.661786723$.
+Put $\qminus=3.4003$ and $\qplus=3.661786723$.
 Our fully formalized bounds are
 \begin{equation}\label{eq:formal-bounds}
  \boxed{\begin{gathered}
@@ -83,7 +84,7 @@ Our fully formalized bounds are
   \qquad(n\geq1).
  \end{gathered}}
 \end{equation}
-The lower proof uses three slab widths and proves that the enumerated
+The lower proof uses four slab widths and proves that the enumerated
 blocks form a uniquely decoded language of valid snakes.
 The upper proof uses a compressed suffix automaton and a
 nonnegative weight function. Allowing zero weights at dead ends avoids
@@ -92,7 +93,7 @@ The Lean sources are in the repository's
 \href{https://github.com/fedimser/math/tree/master/rubiks-snake/lean}
 {\texttt{rubiks-snake/lean}} directory.
 
-Python notebooks reproduce the slab and window computations.
+Python notebooks reproduce the historical slab and window computations.
 Section~\ref{sec:reproduce} distinguishes their archived output from
 the independently checked Lean certificates.
 
@@ -431,43 +432,50 @@ $C=1+C\sum_ji_j\alpha^{-j}=1+C$, a contradiction.
 The strict polynomial inequality says that $p/D<\alpha$.
 \end{proof}
 
-For progresses $1,2,3$ through internal lengths $28,20,18$, the
-Lean counter selects irreducibles directly by recording a backward
-crossing of every internal slab boundary.
-The notebook \texttt{mu-lower.ipynb} obtains the same rows by
-subtracting decomposable blocks using \eqref{eq:irreducible}.
-Their agreement provides an independent check; only the directly
-counted Lean rows enter the formal proof.
-The retained polynomial has
-$L=29$, with
+For the current certificate, take progresses $1,2,3,4$ and internal
+cutoffs $20,20,18,21$. Only the branch whose first step is $+e_y$
+is enumerated. The counter records backward crossings of internal
+slab boundaries and discards branches using a remaining-length budget.
+The formal proof needs only an undercount, so it does not assume that
+the pruning rule retains every possible block.
+
+\begin{lemma}\label{lem:fourfold}
+If a duplicate-free family of valid irreducible x-bridges starts with
+$+e_y$, the union of its four rotations about x is duplicate-free,
+valid, and irreducible, with four times each length coefficient.
+\end{lemma}
+\begin{proof}
+The quarter turn $(x,y,z)\mapsto(x,-z,y)$ preserves the lattice,
+perpendicularity, and the complementary-wedge collision rule. It
+fixes all x heights, so it preserves both bridge conditions and
+irreducibility. Each rotation is injective. The four images start
+with $+e_y,+e_z,-e_y,-e_z$, respectively, so they are disjoint.
+\end{proof}
+
+This argument supplies three quarters of the blocks without
+enumerating them. Distinct progresses are separated by their total
+x heights. The retained polynomial has $L=22$, with
 \[
  i_2,\ldots,i_9=4,8,16,24,40,72,272,1200.
 \]
 Its exact sign test gives
 \begin{equation}\label{eq:qminus}
- \mu>\qminus=\frac{3400034903}{10^9}.
+ \mu\geq\qminus=\frac{34003}{10000}.
 \end{equation}
-Theorem~\ref{thm:existence} therefore gives the stronger pointwise
-conclusion
+Theorem~\ref{thm:existence} therefore gives
 \begin{equation}\label{eq:closed-lower}
- S_n>\qminus^{\,n-1}\qquad(n\geq2).
+ S_n\geq\qminus^{\,n-1}\qquad(n\geq1).
 \end{equation}
-The older finite induction check
-$c_k\geq(41/250)\qminus^k$ for $k\geq2$ remains a bound on the
-renewal sequence itself. Its prefactor is unnecessary in
-\eqref{eq:closed-lower}.
-
-The Lean induction uses the simpler prefactor $4^{-31}$.
+The Lean induction uses the prefactor $4^{-24}$.
 Since $i_2,i_3>0$, every $k\geq2$ has $c_k\geq1$.
-For $2\leq k\leq30$, the bound
-$4^{-31}\qminus^k\leq1$ follows from $\qminus<4$.
-For $k\geq31$, all indices $k-j$ in \eqref{eq:renewal} are at
+For $2\leq k\leq23$, the bound
+$4^{-24}\qminus^k\leq1$ follows from $\qminus<4$.
+For $k\geq24$, all indices $k-j$ in \eqref{eq:renewal} are at
 least two, and \eqref{eq:lower-certificate} proves the induction step.
 Taking growth rates and applying \eqref{eq:fekete-pointwise}
-gives the non-strict lower bounds stated in \eqref{eq:formal-bounds}.
-The formal proof needs the counted blocks to be valid and irreducible;
-it does not need completeness of the enumeration or a formalization
-of the subtraction formula \eqref{eq:irreducible}.
+removes the prefactor. The older notebook construction uses progresses
+$1,2,3$ through internal lengths $28,20,18$ and gives the historical
+endpoint $3.400034903$; it is not a dependency of the current proof.
 
 \section{Upper bounds}\label{sec:upper}
 
@@ -679,9 +687,16 @@ checking the coefficients; the mathematical library does not need
 native compilation.
 
 Build the project by running \texttt{lake build} in
-\texttt{rubiks-snake/lean}. On the development machine, the slab
-certificate took about 325 seconds and the length-16 compressed-prefix
-certificate about 36 minutes. Integer keys and constant-stack scans kept
+\texttt{rubiks-snake/lean}. The symmetry-reduced lower certificate takes
+about 50 seconds. A fresh serial rebuild of all 24 project-owned modules
+in its dependency chain, including both native libraries, took
+117.61 seconds with maximum child RSS of 3.17 GiB. This measurement
+reused only the pinned compiler and cached third-party dependencies.
+The script \texttt{lean/check\_fast\_lower.py} reproduces the check.
+The historical 325-second lower certificate is no longer a dependency
+of the default build.
+The length-16 compressed-prefix certificate still takes about
+36 minutes. Integer keys and constant-stack scans kept
 the latter check within a 6 GiB address-space cap, with peak RSS of
 2.30 GiB. The subsequent slab language and lower-bound proofs
 each compiled in about two seconds.
@@ -690,12 +705,14 @@ The bounded constant, \texttt{snakeGrowthConstant}, is the limit
 identified by \texttt{tendsto\_countValidFormulas\_rpow}.
 
 The four Python notebooks in \texttt{asymptotic-analysis/} remain
-independent reproductions of the larger finite computations:
+independent reproductions of the historical finite computations:
 \texttt{mu-lower.ipynb} generates slab tables and their root certificate;
 \texttt{mu-upper.ipynb} checks componentwise window certificates;
 \texttt{pointwise-lower.ipynb} evaluates renewal counts and induction
 prefactors; and \texttt{pointwise-upper.ipynb} checks a positive
-full-graph vector. They use \texttt{rubiks\_snake.py}, NumPy,
+full-graph vector. The lower notebooks retain the older endpoint
+$3.400034903$ and do not implement the fourfold reduction.
+They use \texttt{rubiks\_snake.py}, NumPy,
 Numba, and SciPy. Run Python through the repository's \texttt{.venv}.
 
 The notebooks distinguish rerun outputs from archived outputs.
@@ -716,9 +733,10 @@ recorded during enumeration. On the upper side, a prefix dictionary retains
 the collision information of short windows with substantially fewer
 states, and terminal weights give a small prefactor.
 
-The formal interval $[3.400034903,3.661786723]$ has width
-$0.261751820$. Its lower endpoint matches the larger Python computation,
-and its upper endpoint is smaller. The lower bound still restricts long-range
+The formal interval $[3.4003,3.661786723]$ has width
+$0.261486723$. Fourfold geometric symmetry makes the lower proof
+checkable in under two minutes on the development machine.
+The lower bound still restricts long-range
 interactions between blocks, and the upper bound discards collisions
 beyond its finite memory. A gap below $0.1$ remains open.
 We have not proved a ratio limit, a constant-prefactor asymptotic,
