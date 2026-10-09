@@ -3,6 +3,8 @@
 The pinned compiler and existing third-party dependencies are reused. No
 project-owned build artifacts are copied. Run with the repository's Python
 environment; the temporary build is removed on success or failure.
+The --target option also supports the self-contained upper finite check:
+RubiksSnake.ForbiddenPrefixSixteenComputation.
 """
 
 import argparse
@@ -20,7 +22,12 @@ import time
 
 ROOT = Path(__file__).resolve().parent
 TARGET = "RubiksSnake.CapLowerBound"
-NATIVE = {"RubiksSnakeComputation", "RubiksSnakePrunedComputation", "RubiksSnakeCapComputation"}
+NATIVE = {
+    "RubiksSnakeComputation",
+    "RubiksSnakePrunedComputation",
+    "RubiksSnakeCapComputation",
+    "RubiksSnakePrefixComputation",
+}
 
 
 def project_modules(target):
@@ -57,6 +64,7 @@ def run(output, seconds, target=TARGET):
         raise FileNotFoundError("existing Lake dependencies are required")
     env = dict(os.environ, LEAN_NUM_THREADS="1", OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1")
     records = []
+    plugins = []
     with tempfile.TemporaryDirectory(prefix="rubiks-snake-fast-lower-") as directory:
         work = Path(directory)
         for name in ("lean-toolchain", "lakefile.toml", "lake-manifest.json"):
@@ -83,14 +91,8 @@ def run(output, seconds, target=TARGET):
                 relative = Path(module.replace(".", "/") + ".lean")
                 olean_target = work / ".lake/build/lib/lean" / relative.with_suffix(".olean")
                 olean_target.parent.mkdir(parents=True, exist_ok=True)
-                libraries = [
-                    library
-                    for native in modules
-                    if native in NATIVE
-                    for library in sorted((work / ".lake/build/lib").glob(f"*_{native}.so"))
-                ]
                 command = ["lean", str(work / relative), "-o", str(olean_target), "-j1", "-M4096"]
-                command.extend("--plugin=" + str(library) for library in libraries)
+                command.extend("--plugin=" + str(library) for library in plugins)
             command_start = time.monotonic()
             process = subprocess.Popen(
                 command,
@@ -112,6 +114,15 @@ def run(output, seconds, target=TARGET):
             if process.returncode:
                 raise RuntimeError(log)
             records.append({"module": module, "seconds": elapsed, "output": log})
+            if module in NATIVE:
+                setup = work / ".lake/build/ir" / (module.replace(".", "/") + ".setup.json")
+                dependencies = [Path(plugin["path"]) for plugin in json.loads(setup.read_text())["plugins"]]
+                libraries = list((work / ".lake/build/lib").glob(f"*_{module}.so"))
+                if len(libraries) != 1:
+                    raise RuntimeError(f"expected one native library for {module}, found {libraries}")
+                for library in dependencies + libraries:
+                    if library not in plugins:
+                        plugins.append(library)
         elapsed = time.monotonic() - start
     report = {
         "target": target,

@@ -79,7 +79,7 @@ lemma successors_eq (codes : Std.HashSet ℕ)
     successors codes index (encode rs) =
       PrefixAutomaton.indexedSuccessors (dictionary codes) (index ∘ encode) rs := by
   simp only [successors, decode_encode, PrefixAutomaton.indexedSuccessors, Function.comp_apply,
-    longest_eq codes hcodes]
+    WindowComputation.extensionAllowed_eq_valid, longest_eq codes hcodes]
 
 /-- For round-tripping keys and a correctly indexed source, the integer graph's
 weighted row is exactly the decoded automaton's semantic outgoing sum. -/

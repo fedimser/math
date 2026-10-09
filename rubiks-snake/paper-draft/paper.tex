@@ -736,16 +736,19 @@ vector is used as an assumption.
 The theorem dependencies contain no \texttt{sorryAx}.
 For speed, the upper checker stores coordinates
 as triples of integers; its equivalence to the original function-valued
-coordinates and validity predicate is proved.
+coordinates and validity predicate is proved. The graph builder shares
+the existing prefix geometry and its validity check across the four
+candidate rotations. Each extension then checks only its new wedge
+against the existing wedges. A separate proof shows that this agrees
+with checking the whole extended word, even for an invalid prefix.
 The lower checker stores cube occupancy in a byte array and restores
 each entry after a recursive branch. Its correctness proof verifies
 the coordinate indexing, array restoration, and correspondence between
 the counter and a duplicate-free word enumeration. Separate lemmas
 prove collision freedom, conversion to quarter-turn formulas, and
 unique decoding across slab widths.
-Lake compiles this small computation library to native code before
-checking the coefficients; the mathematical library does not need
-native compilation.
+Lake precompiles the executable enumeration and prefix-automaton libraries
+to native code; the mathematical library does not need native compilation.
 
 Build the project by running \texttt{lake build} in
 \texttt{rubiks-snake/lean}. A fresh serial rebuild of all 40 project-owned
@@ -758,11 +761,17 @@ reused only the pinned compiler and cached third-party dependencies.
 The script \texttt{lean/check\_fast\_lower.py} reproduces the check.
 The historical 325-second lower certificate is no longer a dependency
 of the default build.
-The length-16 compressed-prefix certificate still takes about
-36 minutes. Integer keys and constant-stack scans kept
-the latter check within a 6 GiB address-space cap, with peak RSS of
-2.30 GiB. The subsequent slab language and lower-bound proofs
-each compiled in about two seconds.
+Native precompilation and shared prefix geometry reduced the length-16
+compressed-prefix check from the recorded 36 minutes 19 seconds to
+218.69 seconds, including fresh builds of its native library and
+compatibility import. Maximum child RSS was 2.51 GiB, with a
+4096 MiB Lean heap limit and serial module checks. The same script
+reproduces this measurement by selecting the finite-check module with
+\texttt{--target}, as described in the repository README.
+All original integer inequalities and graph metadata remain checked.
+Both the finite certificate and its logical conversion are still
+dependencies of the final upper bounds. These timings exclude fresh
+builds of the pinned compiler and third-party dependencies.
 The five decimal summary theorems are in \texttt{FinalResults.lean}.
 The bounded constant, \texttt{snakeGrowthConstant}, is the limit
 identified by \texttt{tendsto\_countValidFormulas\_rpow}.

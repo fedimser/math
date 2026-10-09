@@ -91,6 +91,41 @@ lemma valid_iff (rs : List Rotation) : valid rs = true ↔ ValidList rs := by
   rw [← compactWedges_map, List.pairwise_map]
   simp only [← disjoint_iff]
 
+/-- Compact paths always contain their initial wedge. -/
+private lemma path_ne_nil (center incoming outgoing : Coord) (rs : List Rotation) :
+    path center incoming outgoing rs ≠ [] := by
+  cases rs <;> simp [path]
+
+/-- Dropping a nonterminal head does not change a nonempty list's final element. -/
+private lemma getLastD_cons_of_ne_nil {α : Type*} (a fallback : α) (xs : List α)
+    (h : xs ≠ []) : (a :: xs).getLastD fallback = xs.getLastD fallback := by
+  simp only [List.getLastD_eq_getLast?, List.getLast?_cons_of_ne_nil h]
+
+/-- Appending one rotation adds precisely the wedge constructed from the current terminal frame. -/
+lemma path_append_singleton (center incoming outgoing : Coord) (rs : List Rotation)
+    (r : Rotation) (fallback : CompactWedge) :
+    path center incoming outgoing (rs ++ [r]) =
+      path center incoming outgoing rs ++
+        [nextWedge ((path center incoming outgoing rs).getLastD fallback) r] := by
+  induction rs generalizing center incoming outgoing with
+  | nil => simp [path, nextWedge, neg]
+  | cons a rs ih =>
+    simp only [List.cons_append, path, ih]
+    rw [getLastD_cons_of_ne_nil _ _ _ (path_ne_nil _ _ _ _)]
+
+/-- Shared-prefix extension checks are exactly the old whole-path validity test,
+including when the source prefix itself is invalid. -/
+theorem extensionAllowed_eq_valid (rs : List Rotation) (r : Rotation) :
+    extensionAllowed (extensionContext rs) r = valid (rs ++ [r]) := by
+  have hp : compactWedges (rs ++ [r]) = compactWedges rs ++
+      [nextWedge ((compactWedges rs).getLastD ⟨(0, 0, 0), (0, -1, 0), (1, 0, 0)⟩) r] :=
+    path_append_singleton _ _ _ rs r _
+  apply Bool.eq_iff_iff.mpr
+  simp only [extensionAllowed, extensionContext, Bool.and_eq_true,
+    decide_eq_true_eq, List.all_eq_true]
+  rw [valid, decide_eq_true_eq, hp, List.pairwise_append]
+  simp
+
 /-- Drops the oldest rotation and appends a new one; this preserves a nonempty
 window's length and performs no validity check by itself. -/
 def next (rs : List Rotation) (r : Rotation) : List Rotation :=

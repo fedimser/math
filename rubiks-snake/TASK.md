@@ -2,7 +2,16 @@
 
 ## Objective and stopping condition
 
-**Current focused request (completed 2026-10-08): achieved.** The transverse-cap
+**Current request (2026-10-08): optimize upper-proof build time, keeping the
+bounds fixed.** The user is satisfied with the current bounds and has stopped
+numerical-bound research. The length-16 certificate now passes a fresh serial
+check in **218.69 seconds**, versus the recorded **36m19s**, with maximum
+child RSS **2.51 GiB**. Both of its theorems remain necessary. See
+[the optimization record](#upper-certificate-optimization-2026-10-08).
+The historical research goals and unfinished candidates below are archived,
+not instructions to resume numerical searches.
+
+**Previous focused request (completed 2026-10-08): achieved.** The transverse-cap
 coefficient connection is proved, giving unconditional bounds
 **`3.4505674 <= mu`** and **`3.4505674^(n-1) <= S_n`**.
 A fresh serial rebuild of all **40 project-owned lower-proof modules** and
@@ -16,12 +25,9 @@ That session's unconditional bound was **3.4003**. A fresh serial rebuild of its
 entire 24-module project-owned dependency chain took **117.61 seconds**,
 including both native computation libraries and the coefficient check.
 See [the fast lower proof](#fast-fourfold-lower-proof-2026-10-07-evening).
-The longer-term strict-gap objectives below remain open.
+The historical strict-gap objectives below were not reached.
 
-Continue the existing research and Lean formalization; do not restart from the
-original baseline or wait for another confirmation. The user has authorized
-continued work. An exact formula for the number of snakes would be welcome, but
-the required outcome is:
+The earlier research request sought the following outcomes:
 
 1. Prove `L_mu <= mu <= U_mu` with `U_mu - L_mu < 0.1`.
 2. Prove uniform pointwise bounds
@@ -30,10 +36,9 @@ the required outcome is:
 3. Audit the Lean proofs, then update and review the paper against those proofs.
 
 Both gaps concern the numerical exponential **bases**, not their logarithms.
-A numerical experiment, a conditional theorem with an unchecked certificate, or
-an improvement that leaves either gap at least 0.1 does not finish the task.
-The user specifically expects new mathematical methods: simply increasing the
-old slab cutoffs or collision windows is unlikely to suffice.
+The earlier request called for proved, unconditional improvements using new
+mathematical methods, rather than larger slab cutoffs or collision windows.
+These goals have been superseded by the user's decision to keep the bounds.
 
 The earlier documentation audit covered all 957 declarations across the 57
 project-owned Lean sources: all have docstrings, non-comment code tokens were
@@ -192,9 +197,12 @@ concatenation, geometric validity, unique decoding, renewal counting, and
 uses the prefixes of collision factors through length 16. Its certificate has
 4,748,260 states and 14,133,721 labeled edges. Forty-eight integer potential
 updates and a six-step terminal estimate give base 3.661786723 and prefactor 3.
-The finite check took 36 minutes 19 seconds with 2.30 GiB peak RSS. Zero weights
+The finite check now takes 218.69 seconds including its native library build,
+with 2.51 GiB peak child RSS; the historical run took 36 minutes 19 seconds.
+Zero weights
 at dead ends are intentional; making them artificially positive worsens the
-prefactor. The length-14 certificate takes about four minutes.
+prefactor. The length-14 certificate module rebuilt in 44 seconds after the
+same optimization.
 
 Preserve the existing public bound APIs in
 [SnAsymptotic_LowerBound.lean](lean/RubiksSnake/SnAsymptotic_LowerBound.lean),
@@ -224,7 +232,7 @@ placement factors do not change their exponential rate.
 These theorems do not supply a geometric construction by themselves. Prove the
 trace encoding, multiplicity bounds, and counting comparison for any application.
 
-## Immediate unfinished work: the extended slab candidate
+## Archived unfinished work: the extended slab candidate
 
 The candidate lower endpoint is **3.429771044**, not a proved numerical bound.
 The coefficient rows are already in
@@ -476,7 +484,7 @@ depend on private session files. Useful paths relative to that archive:
 No old agent needs to be kept running. Resume from the saved sources and
 results, not an assumed live computation.
 
-## Finish the research, then the paper
+## Historical research completion checklist
 
 Once both strict gap inequalities have been proved:
 
@@ -507,14 +515,12 @@ verified research milestones in [ai-log.txt](ai-log.txt), one timestamped line
 per entry. Use subagents for bounded independent tasks when useful, with no
 overlapping heavy Lean builds or unbounded memory use.
 
-## Important note on research direction
-Try different direction from what we currently use for the best prrof.
-Current proof requires about 36 minutes to build (espectialy RubiksSnake.ForbiddenPrefixSixteenComputation).
-You should find proofs that do not require this much computation and use some
-genuinely different approach.
-After finding such proof, as long as you can make sure that these expenseive 
-computations are not needed anymore for best bound, you should remove these expensive computations.
-The proof should be more mathematical and creative, rathern then relying on precomputing numbers of large snakes.
+## Historical note on research direction
+
+The earlier request sought more geometric proofs and removal of expensive
+certificates if superseded. The length-16 upper certificate remains necessary
+for the best upper bound. It has now been accelerated without weakening or
+removing any checked obligations; no further numerical search is requested.
 
 ## Memory usage
 You are running on system with 16GBof memory
@@ -1007,9 +1013,10 @@ seconds, and the cap polynomial module 7.60 seconds.
 The machine-readable report is in the session artifact
 `cap-lower-fresh-build.json`. The earlier 3.4003 check remains reproducible
 with `--target RubiksSnake.FastLowerBound --seconds 120`.
-The five-minute requirement applies to the lower-proof chain; the unchanged
-length-16 upper certificate still takes about 36 minutes from scratch.
-The broader base-gap target below 0.1 remains open.
+At this milestone, the five-minute requirement applied to the lower-proof
+chain; the length-16 upper certificate still took about 36 minutes.
+The later optimization below reduces that cost. The broader base-gap target
+below 0.1 was not reached and is no longer an active request.
 
 The complete default library builds with the new five-theorem facade.
 The dependency audit of the connection, growth bound, and both public lower
@@ -1021,3 +1028,66 @@ The updated seven-page paper also passed a forced `latexmk -g -pdf` rebuild,
 with no LaTeX warnings, undefined references, or overfull boxes in its log.
 The public Lean APIs rebuild without new warnings, and `git diff --check`
 passes. No commit or push was made.
+
+## Upper certificate optimization (2026-10-08)
+
+The user stopped numerical-bound research at **3.4505674 <= mu <= 3.661786723**
+and requested faster verification of
+[ForbiddenPrefixSixteenComputation.lean](lean/RubiksSnake/ForbiddenPrefixSixteenComputation.lean).
+The module has two theorems: private `array_checked` performs the finite
+verification, and public `checked` converts its array result to statewise
+propositions. Both feed both final upper bounds. The graph metadata is not
+needed for the numerical inequality alone, but costs little and remains
+checked to preserve the public API. No theorem was removed.
+
+Two changes reduce the cost:
+
+1. The executable prefix and window routines now live in
+   [RubiksSnakePrefixComputation.lean](lean/RubiksSnakePrefixComputation.lean),
+   a separately precompiled Lake library.
+   [PrefixAutomatonData.lean](lean/RubiksSnake/PrefixAutomatonData.lean) remains
+   a compatibility import, preserving declaration names and existing imports.
+   Native precompilation alone reduced the fresh certificate check to
+   **307.34 seconds**.
+2. Each encoded state's four candidate extensions share its wedge list,
+   last wedge, and existing pairwise-validity check. Only the new wedge is
+   tested separately for each rotation.
+   [WindowUpperComputation.lean](lean/RubiksSnake/WindowUpperComputation.lean)
+   proves `extensionAllowed_eq_valid` for every prefix, including invalid
+   ones; [EncodedPrefixAutomaton.lean](lean/RubiksSnake/EncodedPrefixAutomaton.lean)
+   uses this equality in its transition-correctness proof.
+   A length-12 control retained all counts and weights while graph generation
+   fell from 972 ms to 414 ms.
+
+The full, unchanged length-16 certificate then passed from fresh project-owned
+artifacts in **218.693560426 seconds**, about **10x** faster than the recorded
+36m19s run. This includes the native library (2.534 s), compatibility import
+(0.524 s), finite-check module (213.441 s), and setup overhead. Maximum child
+RSS was **2,637,076 KiB** (**2.51 GiB**). The check was serial with `-j1 -M4096`;
+only the pinned compiler and cached third-party dependencies were reused.
+All 4,748,260 states, 14,133,721 edges, root potential, and integer certificate
+inequalities remain unchanged. The report is the session artifact
+`prefix-optimized-fresh-build.json`.
+
+Reproduce from the repository root:
+
+```bash
+.venv/bin/python rubiks-snake/lean/check_fast_lower.py \
+  --target RubiksSnake.ForbiddenPrefixSixteenComputation
+```
+
+The benchmark discovers each native library's plugin dependencies from Lake's
+setup file, loading Batteries before the prefix library. Its default lower
+target also passed a fresh regression check: all 40 modules in **190.62 seconds**
+and **3.17 GiB** peak child RSS, within the existing five-minute budget.
+
+Normal Lake builds of the affected upper certificates were run serially,
+followed by the public facade and default root library. All passed, producing
+persistent build artifacts. In that build the length-16 module took 207 seconds.
+The optimization changes neither numerical bound, the pointwise prefactors,
+nor the existing `native_decide` trust boundary.
+An audit of all five public statements and the new equivalence theorem found
+no `sorryAx` or new trust assumptions; the equivalence itself uses only
+`propext` and `Quot.sound`. The updated seven-page paper passed a forced
+rebuild without warnings, undefined references, or overfull boxes.
+No commit or push was made.

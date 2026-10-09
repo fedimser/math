@@ -116,14 +116,39 @@ estimate handles states with no long continuation, without an artificial
 positive weight that would inflate the prefactor.
 The smaller [seven-symbol window](lean/RubiksSnake/WindowSevenUpperBound.lean)
 also gives $S_n\leq(8/3)(3.704)^{n-1}$.
-The length-16 finite check took about 36 minutes, with peak RSS of 2.30 GiB under a
-6 GiB address-space cap. The smaller
+The length-16 finite check now takes **3m39s**, down from the recorded **36m19s**.
+Its executable routines are in the separately precompiled
+[prefix computation library](lean/RubiksSnakePrefixComputation.lean).
+For each state, the graph builder computes the existing wedge geometry and
+validity once, then tests each of the four possible new wedges against it.
+[The equivalence proof](lean/RubiksSnake/WindowUpperComputation.lean)
+covers all prefixes, including invalid ones.
+Both theorems in
+[the finite-check module](lean/RubiksSnake/ForbiddenPrefixSixteenComputation.lean)
+remain needed by the final upper bounds; every original certificate obligation
+and graph count is retained.
+
+The fresh serial measurement includes rebuilding the native library, its
+compatibility import, and the complete finite check: **218.69 seconds**,
+with maximum child RSS **2.51 GiB** and a **4096 MiB** Lean heap limit.
+It reuses only the pinned compiler and cached third-party dependencies.
+Reproduce it from the repository root:
+
+```bash
+.venv/bin/python rubiks-snake/lean/check_fast_lower.py \
+  --target RubiksSnake.ForbiddenPrefixSixteenComputation
+```
+
+This measures the finite certificate, not a fresh build of the entire library.
+The smaller
 [length-14 certificate](lean/RubiksSnake/ForbiddenPrefixFourteenUpperBound.lean)
-matches the master paper's upper endpoint 3.667542939 and takes about four minutes.
+matches the master paper's upper endpoint 3.667542939; its module rebuilt in
+44 seconds with the new shared computation library.
 The strongest formal bounds improve both endpoints of the original notebook
-certificate. Their remaining base gap is 0.261486723, not yet below 0.1.
+certificate. Their remaining base gap is 0.211219323. Numerical-bound research
+has concluded at the user's request.
 The lower notebooks retain the historical 3.400034903 computation; they do
-not reproduce the new fourfold certificate.
+not reproduce the fourfold or transverse-cap certificates.
 
 [Submultiplicativity](lean/RubiksSnake/SnAsymptotic_MuExistence.lean) also gives
 $\mu^{n-1}\leq S_n$ at every positive length. Consequently, any lower bound on
