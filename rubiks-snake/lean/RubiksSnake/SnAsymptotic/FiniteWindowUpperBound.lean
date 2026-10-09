@@ -1,5 +1,5 @@
 import RubiksSnake.SnAsymptotic.WindowUpperComputation
-import RubiksSnake.SnAsymptotic.SnAsymptotic_MuExistence
+import RubiksSnake.SnAsymptotic.Submultiplicativity
 import Mathlib.Algebra.BigOperators.Ring.List
 import Mathlib.Algebra.Order.BigOperators.Group.List
 

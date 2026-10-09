@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptotic.Geometry
+import RubiksSnake.Geometry
 import RubiksSnake.OtherSequences.ReversalTransform
 
 /-!

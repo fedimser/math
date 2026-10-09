@@ -1,11 +1,11 @@
 import RubiksSnake.SnAsymptotic.FastLowerCertificate
 
 /-!
-# A fast-checked lower bound above 3.4
+# Fourfold bridge code
 
 The geometric fourfold orbit argument replaces three quarters of the native
-enumeration. Arbitrary budget pruning gives undercounts; primitive bridge
-decoding and the existing renewal theorem give the asymptotic lower bound.
+enumeration. The resulting checked coefficients supply the legacy bridge
+family used by the cap construction.
 -/
 
 namespace RubiksSnake.FastLower
@@ -28,24 +28,5 @@ lemma coefficient_le (n : Nat) :
     rows_checked.1, rows_checked.2.1, rows_checked.2.2.1, rows_checked.2.2.2,
     Nat.add_zero] at h
   simpa only [code, coefficient, Nat.add_assoc] using h
-
-/-- The new lower bound, with no dependency on the earlier expensive certificate. -/
-theorem growthConstant_lower_bound : (3.4003 : ℝ) ≤ snakeGrowthConstant := by
-  rw [show (3.4003 : ℝ) = 34003 / 10000 by norm_num]
-  apply BridgeCode.le_growthConstant code 22 (by decide)
-    (fun j => coefficient j.val) (fun j => coefficient_le j.val)
-    ?_ ?_ (34003 / 10000) (by norm_num) (by norm_num) polynomial
-  · exact (by decide : 1 ≤ coefficient 1).trans (coefficient_le 1)
-  · exact (by decide : 1 ≤ coefficient 2).trans (coefficient_le 2)
-
-/-- Fekete's inequality removes the renewal prefactor at every rotation length. -/
-theorem count_lower_bound (k : Nat) :
-    (3.4003 : ℝ) ^ k ≤ countValidFormulas k :=
-  (pow_le_pow_left₀ (by norm_num) growthConstant_lower_bound k).trans
-    (snakeGrowthConstant_pow_le_countValidFormulas k)
-
-/-- Uniform pointwise lower bound for every positive number of wedges. -/
-theorem Sn_lower_bound (n : ℕ+) : (3.4003 : ℝ) ^ ((n : Nat) - 1) ≤ S n :=
-  count_lower_bound ((n : Nat) - 1)
 
 end RubiksSnake.FastLower

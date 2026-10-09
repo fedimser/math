@@ -6,12 +6,11 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
-# Existence of the Rubik's Snake growth constant
+# Submultiplicative Rubik's Snake counts
 
-This file proves that the exponential growth rate of the number of valid
-Rubik's Snake formulas exists.  The key combinatorial fact is that validity is
-hereditary for prefixes and suffixes.  Consequently, the counting sequence is
-submultiplicative, so its logarithm is subadditive and Fekete's lemma applies.
+Validity is hereditary for prefixes and suffixes, so valid-formula counts are
+submultiplicative. Fekete's inequality then removes a fixed positive prefactor
+from any pointwise exponential lower bound. No growth constant is defined here.
 -/
 
 open Filter Set Topology
@@ -169,61 +168,23 @@ lemma logValidFormulaCount_div_bddBelow :
   rintro _ ⟨k, rfl⟩
   exact div_nonneg (logValidFormulaCount_nonneg k) (Nat.cast_nonneg k)
 
-/-- The exponential growth constant for valid Rubik's Snake formulas. -/
-def snakeGrowthConstant : ℝ :=
-  Real.exp logValidFormulaCount_subadditive.lim
-
-/-- Fekete's lemma identifies the limit of normalized logarithmic counts with `log mu`. -/
-lemma tendsto_logValidFormulaCount_div :
-    Tendsto (fun k : ℕ => logValidFormulaCount k / k) atTop
-      (𝓝 (Real.log snakeGrowthConstant)) := by
-  have ht := logValidFormulaCount_subadditive.tendsto_lim
-    logValidFormulaCount_div_bddBelow
-  simpa [snakeGrowthConstant] using ht
-
-/-- The chosen growth constant is strictly positive because it is the exponential of a real limit. -/
-lemma snakeGrowthConstant_pos : 0 < snakeGrowthConstant :=
-  Real.exp_pos _
-
-/-- Submultiplicativity makes the limiting exponential rate a pointwise
-lower bound, with no prefactor or exceptional lengths. -/
-theorem snakeGrowthConstant_pow_le_countValidFormulas (k : ℕ) :
-    snakeGrowthConstant ^ k ≤ (countValidFormulas k : ℝ) := by
-  by_cases hk : k = 0
-  · subst k
-    have h0 : countValidFormulas 0 = 1 := by simpa [S] using S1_value
-    norm_num [h0]
-  · have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero hk
-    have hlim := logValidFormulaCount_subadditive.lim_le_div
-      logValidFormulaCount_div_bddBelow hk
-    have hmul :
-        (k : ℝ) * logValidFormulaCount_subadditive.lim ≤ logValidFormulaCount k := by
-      simpa [mul_comm] using (le_div_iff₀ hkpos).mp hlim
-    rw [snakeGrowthConstant, ← Real.exp_nat_mul]
-    calc
-      Real.exp ((k : ℝ) * logValidFormulaCount_subadditive.lim) ≤
-          Real.exp (logValidFormulaCount k) := Real.exp_le_exp.mpr hmul
-      _ = countValidFormulas k := by
-        rw [logValidFormulaCount, Real.exp_log]
-        exact_mod_cast countValidFormulas_pos k
-
-/-- Any uniform exponential lower bound with a positive prefactor gives the same lower base
-for the growth constant; the prefactor disappears in normalized logarithms. -/
-theorem snakeGrowthConstant_ge_of_pointwise
+/-- For a submultiplicative count, any uniform exponential lower bound with a
+positive prefactor implies the same pointwise base with prefactor one. -/
+theorem pow_le_countValidFormulas_of_pointwise
     (C q : ℝ) (hC : 0 < C) (hq : 0 < q)
-    (hcount : ∀ k : ℕ, C * q ^ k ≤ (countValidFormulas k : ℝ)) :
-    q ≤ snakeGrowthConstant := by
+    (hcount : ∀ k : ℕ, C * q ^ k ≤ (countValidFormulas k : ℝ))
+    (k : ℕ) : q ^ k ≤ (countValidFormulas k : ℝ) := by
   have hzero : Tendsto (fun k : ℕ => Real.log C / (k : ℝ)) atTop (𝓝 0) :=
     tendsto_const_nhds.div_atTop tendsto_natCast_atTop_atTop
   have hlower :
       Tendsto (fun k : ℕ => Real.log C / (k : ℝ) + Real.log q)
         atTop (𝓝 (Real.log q)) := by
     simpa using hzero.add_const (Real.log q)
-  have hlog : Real.log q ≤ Real.log snakeGrowthConstant := by
-    apply le_of_tendsto_of_tendsto hlower tendsto_logValidFormulaCount_div
+  have hlog : Real.log q ≤ logValidFormulaCount_subadditive.lim := by
+    apply le_of_tendsto_of_tendsto hlower
+      (logValidFormulaCount_subadditive.tendsto_lim
+        logValidFormulaCount_div_bddBelow)
     filter_upwards [eventually_ge_atTop 1] with k hk
-    have hk0 : (k : ℝ) ≠ 0 := by
-      exact_mod_cast (show k ≠ 0 by omega)
     have hcompare : Real.log (C * q ^ k) ≤ Real.log (countValidFormulas k) :=
       Real.strictMonoOn_log.monotoneOn
         (mul_pos hC (pow_pos hq k))
@@ -237,36 +198,24 @@ theorem snakeGrowthConstant_ge_of_pointwise
           Real.log C / (k : ℝ) + Real.log q := by
       field_simp
     simpa only [heq, logValidFormulaCount] using hdiv
-  rw [← Real.exp_log hq, ← Real.exp_log snakeGrowthConstant_pos]
-  exact Real.exp_le_exp.mpr hlog
-
-/-- Exponentiating the logarithmic limit proves convergence of the `k`th roots of formula counts. -/
-lemma tendsto_countValidFormulas_rpow :
-    Tendsto
-      (fun k : ℕ => (countValidFormulas k : ℝ) ^ (1 / (k : ℝ)))
-      atTop (𝓝 snakeGrowthConstant) := by
-  have ht := (Real.continuous_exp.tendsto _).comp
-    (logValidFormulaCount_subadditive.tendsto_lim
-      logValidFormulaCount_div_bddBelow)
-  change Tendsto _ atTop
-    (𝓝 (Real.exp logValidFormulaCount_subadditive.lim))
-  refine ht.congr' (Filter.Eventually.of_forall fun k => ?_)
-  change Real.exp (logValidFormulaCount k / (k : ℝ)) =
-    (countValidFormulas k : ℝ) ^ (1 / (k : ℝ))
-  rw [Real.rpow_def_of_pos]
-  · congr 2
-    simp [logValidFormulaCount, div_eq_mul_inv]
-  · exact_mod_cast countValidFormulas_pos k
-
-/-- The paper's growth constant `μ` exists: the `n`th roots of the number of
-valid length-`n` rotation formulas converge to a positive real number. -/
-theorem SnAsymptotic_MuExistence :
-    ∃ μ : ℝ, 0 < μ ∧
-      Tendsto
-        (fun n : ℕ => (countValidFormulas n : ℝ) ^ (1 / (n : ℝ)))
-        atTop (𝓝 μ) :=
-  ⟨snakeGrowthConstant, snakeGrowthConstant_pos,
-    tendsto_countValidFormulas_rpow⟩
+  by_cases hk : k = 0
+  · subst k
+    have h0 : countValidFormulas 0 = 1 := by
+      simpa [S] using (show S 1 = 1 by snake_decide)
+    norm_num [h0]
+  · have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero hk
+    have hlim := logValidFormulaCount_subadditive.lim_le_div
+      logValidFormulaCount_div_bddBelow hk
+    have hmul : (k : ℝ) * Real.log q ≤ logValidFormulaCount k := by
+      apply (mul_le_mul_of_nonneg_left (hlog.trans hlim) hkpos.le).trans_eq
+      field_simp
+    rw [← Real.exp_log hq, ← Real.exp_nat_mul]
+    calc
+      Real.exp ((k : ℝ) * Real.log q) ≤ Real.exp (logValidFormulaCount k) :=
+        Real.exp_le_exp.mpr hmul
+      _ = countValidFormulas k := by
+        rw [logValidFormulaCount, Real.exp_log]
+        exact_mod_cast countValidFormulas_pos k
 
 end
 

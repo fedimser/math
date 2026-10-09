@@ -1,44 +1,34 @@
-import RubiksSnake.SnAsymptotic.SnAsymptotitc_MuLowerBound
-import RubiksSnake.SnAsymptotic.SnAsymptotic_UpperBound
+import RubiksSnake.SnAsymptotic.SmallCounts
+import RubiksSnake.SnAsymptotic.CapLowerBound
+import RubiksSnake.SnAsymptotic.ForbiddenPrefixSixteenUpperBound
 
 /-!
 # Final asymptotic results
 
-These five statements reuse the existing proofs. The growth constant is
-`snakeGrowthConstant`; a formula of length `n` describes `n + 1` wedges.
-All decimal constants below are exact real numbers, not floating-point values.
+Exact small counts and uniform pointwise exponential bounds for the number
+`S n` of valid configurations of an `n`-wedge Rubik's Snake.
 -/
 
 open Filter Topology
 
 namespace RubiksSnake.FinalResults
 
-/-- The root growth rate of valid rotation-word counts converges to a positive real number. -/
-theorem mu_exists :
-    ∃ μ : ℝ, 0 < μ ∧
-      Tendsto
-        (fun n : ℕ => (countValidFormulas n : ℝ) ^ (1 / (n : ℝ)))
-        atTop (𝓝 μ) :=
-  SnAsymptotic_MuExistence
+/-- The certified six-wedge count agrees with https://oeis.org/A375865. -/
+lemma S6_value : S 6 = 920 := by snake_decide
+/-- The certified seven-wedge count agrees with https://oeis.org/A375865. -/
+lemma S7_value : S 7 = 3384 := by snake_decide
 
-/-- Geometrically separated overhanging caps give this exact lower bound on `mu`. -/
-theorem mu_lower_bound : (3.4505674 : ℝ) ≤ snakeGrowthConstant :=
-  CapLower.growthConstant_lower_bound
-
-/-- The length-sixteen collision-prefix certificate bounds `mu` by this exact decimal. -/
-theorem mu_upper_bound : snakeGrowthConstant ≤ (3.661786723 : ℝ) := by
-  convert snakeGrowthConstant_le_3661786723_div_1000000000 using 1
-  norm_num
-
-/-- Every positive wedge length has the certified lower base, with prefactor one. -/
+/-- Geometrically separated cap-and-bridge codes give this lower bound at
+every positive wedge length. -/
 theorem Sn_lower_bound (n : ℕ+) :
     (3.4505674 : ℝ) ^ ((n : ℕ) - 1) ≤ (S n : ℝ) :=
   CapLower.Sn_lower_bound n
 
-/-- Every positive wedge length has the certified upper base and uniform prefactor three. -/
+/-- A length-sixteen collision-prefix certificate gives this upper bound at
+every positive wedge length. -/
 theorem Sn_upper_bound (n : ℕ+) :
     (S n : ℝ) ≤ 3 * (3.661786723 : ℝ) ^ ((n : ℕ) - 1) := by
-  convert Sn_upper_bound_3661786723_div_1000000000 n using 1
-  norm_num
+  convert countValidFormulas_le_forbidden_prefix_sixteen_upper ((n : ℕ) - 1) using 1
+  all_goals norm_num [S]
 
 end RubiksSnake.FinalResults

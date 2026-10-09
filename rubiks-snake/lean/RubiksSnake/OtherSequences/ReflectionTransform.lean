@@ -1,5 +1,5 @@
 import RubiksSnake.OtherSequences.FormulaTransform
-import RubiksSnake.SnAsymptotic.Geometry
+import RubiksSnake.Geometry
 
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring

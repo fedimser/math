@@ -1,7 +1,7 @@
 import RubiksSnake.SnAsymptotic.SlabBlockValidity
 import RubiksSnake.SnAsymptotic.SlabIrreducible
 import RubiksSnake.SnAsymptotic.RenewalBounds
-import RubiksSnake.SnAsymptotic.SnAsymptotic_MuExistence
+import RubiksSnake.SnAsymptotic.Submultiplicativity
 
 /-!
 # Finite codes of geometric bridges
@@ -308,16 +308,16 @@ lemma language_length_pos (C : Code) (L : Nat) (hL : 2 < L)
           simpa using Nat.mul_le_mul htwo hi
         exact hprod.trans h
 
-/-- A renewal polynomial certificate at `0 < q <= 4` bounds the snake growth
-constant below by `q`. Coefficient `j` may undercount length-`j + 1` blocks;
-blocks of lengths two and three supply all sufficiently small base cases. -/
-theorem le_growthConstant (C : Code) (L : Nat) (hL : 2 < L)
+/-- A renewal polynomial certificate at `0 < q <= 4` proves the pointwise
+bound `q ^ k ≤ countValidFormulas k`. Coefficient `j` may undercount
+length-`j + 1` blocks; lengths two and three supply the small base cases. -/
+theorem pow_le_countValidFormulas (C : Code) (L : Nat) (hL : 2 < L)
     (coeff : Fin L → Nat)
     (hcoeff : ∀ j, coeff j ≤ (blocks C (j.val + 1)).length)
     (htwo : 1 ≤ (blocks C 2).length) (hthree : 1 ≤ (blocks C 3).length)
     (q : ℝ) (hq : 0 < q) (hqfour : q ≤ 4)
-    (hpoly : q ^ L ≤ ∑ j : Fin L, (coeff j : ℝ) * q ^ (L - (j.val + 1))) :
-    q ≤ snakeGrowthConstant := by
+    (hpoly : q ^ L ≤ ∑ j : Fin L, (coeff j : ℝ) * q ^ (L - (j.val + 1)))
+    (k : Nat) : q ^ k ≤ countValidFormulas k := by
   let a : ℝ := 1 / 4 ^ (L + 2)
   have habase (k : Nat) (hk : k < L + 2) : a * q ^ k ≤ 1 := by
     have hp : q ^ k ≤ (4 : ℝ) ^ (L + 2) :=
@@ -343,10 +343,10 @@ theorem le_growthConstant (C : Code) (L : Nat) (hL : 2 < L)
         rw [if_pos (by omega : j.val + 1 ≤ k)]
         exact Nat.mul_le_mul_right _ (hcoeff j)
       exact_mod_cast hn
-  apply snakeGrowthConstant_ge_of_pointwise a q (by dsimp [a]; positivity) hq
-  intro k
-  by_cases hk : 2 ≤ k
-  · exact (hbound k hk).trans (by exact_mod_cast language_length_le C L k)
-  · exact (habase k (by omega)).trans (by exact_mod_cast countValidFormulas_pos k)
+  apply pow_le_countValidFormulas_of_pointwise a q (by dsimp [a]; positivity) hq
+  intro n
+  by_cases hn : 2 ≤ n
+  · exact (hbound n hn).trans (by exact_mod_cast language_length_le C L n)
+  · exact (habase n (by omega)).trans (by exact_mod_cast countValidFormulas_pos n)
 
 end RubiksSnake.BridgeCode

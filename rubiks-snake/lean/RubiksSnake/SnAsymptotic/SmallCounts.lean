@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptotic.Geometry
+import RubiksSnake.Geometry
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 
@@ -263,41 +263,5 @@ theorem fastS_eq_S (n : ℕ+) : fastS n = S n := by
 /-- Prove a concrete equality for `S n` using the prefix-tree evaluator. -/
 macro "snake_decide" : tactic =>
   `(tactic| (rw [← fastS_eq_S]; native_decide))
-
-
-/-- Show that for `n ≤ 4`, `S_n` is a power of four because all formulas are valid. -/
-lemma Sn_is_power_of_4 (n : ℕ+) (hfour : n ≤ 4) :
-    S n = 4 ^ ((n : ℕ) - 1) := by
-  rcases n with ⟨n, hn⟩
-  change n ≤ 4 at hfour
-  have allValid : ∀ w : Formula (n - 1), Valid w := by
-    obtain rfl | rfl | rfl | rfl : n = 1 ∨ n = 2 ∨ n = 3 ∨ n = 4 := by omega
-    all_goals native_decide
-  let validEquiv : {w : Formula (n - 1) // Valid w} ≃ Formula (n - 1) :=
-    { toFun := Subtype.val
-      invFun := fun w => ⟨w, allValid w⟩
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl }
-  have hcount : countFormulas (n - 1) Valid = 4 ^ (n - 1) := by
-    rw [countFormulas, Nat.card_congr validEquiv]
-    simp [Formula, Rotation]
-  change countValidFormulas (n - 1) = 4 ^ (n - 1)
-  exact hcount
-
-/-- One wedge has a single valid formula, the empty rotation word
-(see https://oeis.org/A375865). -/
-lemma S1_value: S 1 = 1 := by simpa using Sn_is_power_of_4 1
-/-- All four one-rotation formulas give valid two-wedge snakes. -/
-lemma S2_value: S 2 = 4 := by simpa using Sn_is_power_of_4 2
-/-- All sixteen two-rotation formulas give valid three-wedge snakes. -/
-lemma S3_value: S 3 = 16 := by simpa using Sn_is_power_of_4 3
-/-- All sixty-four three-rotation formulas give valid four-wedge snakes. -/
-lemma S4_value: S 4 = 64 := by simpa using Sn_is_power_of_4 4
-/-- Exact prefix-tree count for five wedges: `241` valid formulas. -/
-lemma S5_value: S 5 = 241 := by snake_decide
-/-- Exact prefix-tree count for six wedges: `920` valid formulas. -/
-lemma S6_value: S 6 = 920 := by snake_decide
-/-- Exact prefix-tree count for seven wedges: `3384` valid formulas. -/
-lemma S7_value : S 7 = 3384 := by snake_decide
 
 end RubiksSnake

@@ -1,7 +1,7 @@
 import RubiksSnake.SnAsymptotic.CapCombinedCode
 import RubiksSnake.SnAsymptotic.CapCandidateCertificate
 
-/-! The unconditional lower endpoint from geometrically separated overhanging caps. -/
+/-! Pointwise lower bounds from geometrically separated overhanging caps. -/
 
 namespace RubiksSnake.CapLower
 
@@ -55,12 +55,13 @@ theorem polynomial :
   rw [div_pow, he]
   field_simp
 
-/-- Overhanging transverse caps raise the growth-constant lower bound to 3.4505674. -/
-theorem growthConstant_lower_bound : (3.4505674 : ℝ) ≤ snakeGrowthConstant := by
+/-- The cap certificate proves the exponential lower bound at every rotation length. -/
+theorem count_lower_bound (k : Nat) :
+    (3.4505674 : ℝ) ^ k ≤ countValidFormulas k := by
   rw [show (3.4505674 : ℝ) = 17252837 / 5000000 by norm_num]
-  apply BridgeCode.le_growthConstant combinedCode 64 (by decide)
+  apply BridgeCode.pow_le_countValidFormulas combinedCode 64 (by decide)
     (fun j => coefficients[j.val + 1]!) coefficient_le ?_ ?_
-    (17252837 / 5000000) (by norm_num) (by norm_num) polynomial
+    (17252837 / 5000000) (by norm_num) (by norm_num) polynomial k
   · have hold : 1 ≤ (BridgeCode.blocks FastLower.code 2).length :=
       (by decide : 1 ≤ FastLower.coefficient 1).trans (FastLower.coefficient_le 1)
     rw [combinedCode, appendCode_blocks_length]
@@ -69,12 +70,6 @@ theorem growthConstant_lower_bound : (3.4505674 : ℝ) ≤ snakeGrowthConstant :
       (by decide : 1 ≤ FastLower.coefficient 2).trans (FastLower.coefficient_le 2)
     rw [combinedCode, appendCode_blocks_length]
     omega
-
-/-- Fekete's bound transfers the new endpoint pointwise with prefactor one. -/
-theorem count_lower_bound (k : Nat) :
-    (3.4505674 : ℝ) ^ k ≤ countValidFormulas k :=
-  (pow_le_pow_left₀ (by norm_num) growthConstant_lower_bound k).trans
-    (snakeGrowthConstant_pow_le_countValidFormulas k)
 
 /-- Uniform lower bound at every positive wedge length. -/
 theorem Sn_lower_bound (n : ℕ+) : (3.4505674 : ℝ) ^ ((n : Nat) - 1) ≤ S n :=

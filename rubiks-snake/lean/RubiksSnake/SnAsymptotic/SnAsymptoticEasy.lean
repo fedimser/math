@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptotic.Geometry
+import RubiksSnake.Geometry
 
 /-!
   Proof that 2^(n-1) <= S_n <= 4^(n-1).
