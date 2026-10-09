@@ -7,7 +7,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.SetTheory.Cardinal.NatCard
 import Lean.Elab.Tactic.Omega
 
-/-! Definitions for Rubik's Snake and related sequences. -/
+/-! Definitions for Rubik's Snake geometry and the sequence S(n). -/
 
 open scoped BigOperators
 

@@ -8,18 +8,22 @@ roots = ["RubiksSnake"]
 
 [[lean_lib]]
 name = "RubiksSnakeComputation"
+roots = ["RubiksSnake.SnAsymptotic.Computation"]
 precompileModules = true
 
 [[lean_lib]]
 name = "RubiksSnakePrunedComputation"
+roots = ["RubiksSnake.SnAsymptotic.PrunedComputation"]
 precompileModules = true
 
 [[lean_lib]]
 name = "RubiksSnakeCapComputation"
+roots = ["RubiksSnake.SnAsymptotic.CapComputation"]
 precompileModules = true
 
 [[lean_lib]]
 name = "RubiksSnakePrefixComputation"
+roots = ["RubiksSnake.SnAsymptotic.PrefixComputation"]
 precompileModules = true
 
 [[require]]

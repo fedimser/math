@@ -53,7 +53,7 @@ reach 3.5. The later fast-proof session improved the certified lower endpoint.
 ## Verified results
 
 The five public summary theorems are in
-[FinalResults.lean](lean/RubiksSnake/FinalResults.lean), namespace
+[FinalResults.lean](lean/RubiksSnake/SnAsymptotic/FinalResults.lean), namespace
 `RubiksSnake.FinalResults`:
 
 | Theorem | Statement |
@@ -76,7 +76,7 @@ Do not revert to the earlier 3.193 lower bound.
 With the present upper endpoint, a proved lower endpoint of **3.562** would
 suffice: `3.661786723 - 3.562 = 0.099786723 < 0.1`.
 
-The former `sorry` in [Loops.lean](lean/RubiksSnake/Loops.lean) is already
+The former `sorry` in [Loops.lean](lean/RubiksSnake/OtherSequences/Loops.lean) is already
 resolved. Validity is preserved by arbitrary integer cyclic shifts, including
 negative shifts.
 
@@ -99,7 +99,7 @@ construction.
 - The final rotation fixes the last wedge's orientation without adding a
   further center displacement. Watch this offset in every encoding.
 
-[SnAsymptotic_MuExistence.lean](lean/RubiksSnake/SnAsymptotic_MuExistence.lean)
+[SnAsymptotic_MuExistence.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_MuExistence.lean)
 proves submultiplicativity and the useful consequence
 `snakeGrowthConstant^k <= countValidFormulas k`. Thus any new lower bound on
 `mu` immediately gives a same-base pointwise lower bound with prefactor one.
@@ -156,44 +156,44 @@ their expensive checks.
 ### Existing lower bound
 
 The current default proof is
-[CapLowerBound.lean](lean/RubiksSnake/CapLowerBound.lean). Its new geometric
+[CapLowerBound.lean](lean/RubiksSnake/SnAsymptotic/CapLowerBound.lean). Its new geometric
 and recurrence connection is described in the completion record below.
-It retains the earlier [FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean),
+It retains the earlier [FastLowerBound.lean](lean/RubiksSnake/SnAsymptotic/FastLowerBound.lean),
 supported by
-[BridgeSymmetry.lean](lean/RubiksSnake/BridgeSymmetry.lean),
-[QuarterSlab.lean](lean/RubiksSnake/QuarterSlab.lean), and
-[FastLowerCertificate.lean](lean/RubiksSnake/FastLowerCertificate.lean).
+[BridgeSymmetry.lean](lean/RubiksSnake/SnAsymptotic/BridgeSymmetry.lean),
+[QuarterSlab.lean](lean/RubiksSnake/SnAsymptotic/QuarterSlab.lean), and
+[FastLowerCertificate.lean](lean/RubiksSnake/SnAsymptotic/FastLowerCertificate.lean).
 It does not import the older expensive coefficient certificate described next.
 
-[RubiksSnakeComputation.lean](lean/RubiksSnakeComputation.lean) is a small
+[Computation.lean](lean/RubiksSnake/SnAsymptotic/Computation.lean) is a small
 separately precompiled library for restoring byte-array enumeration.
-[SlabEnumeration.lean](lean/RubiksSnake/SlabEnumeration.lean) proves its counting
-semantics. [SlabBoard.lean](lean/RubiksSnake/SlabBoard.lean),
-[SlabGeometry.lean](lean/RubiksSnake/SlabGeometry.lean), and
-[SlabBlockValidity.lean](lean/RubiksSnake/SlabBlockValidity.lean) connect the
+[SlabEnumeration.lean](lean/RubiksSnake/SnAsymptotic/SlabEnumeration.lean) proves its counting
+semantics. [SlabBoard.lean](lean/RubiksSnake/SnAsymptotic/SlabBoard.lean),
+[SlabGeometry.lean](lean/RubiksSnake/SnAsymptotic/SlabGeometry.lean), and
+[SlabBlockValidity.lean](lean/RubiksSnake/SnAsymptotic/SlabBlockValidity.lean) connect the
 representation to collision-free geometry.
 
-[SlabCountCertificate.lean](lean/RubiksSnake/SlabCountCertificate.lean) checks
+[SlabCountCertificate.lean](lean/RubiksSnake/SnAsymptotic/SlabCountCertificate.lean) checks
 widths 0, 1, and 2 at internal-edge cutoffs 28, 20, and 18. That native check
-took about 325 seconds. [SlabLowerBound.lean](lean/RubiksSnake/SlabLowerBound.lean)
+took about 325 seconds. [SlabLowerBound.lean](lean/RubiksSnake/SnAsymptotic/SlabLowerBound.lean)
 derives the historical endpoint. These older modules remain available for
 experiments, but the default root no longer imports them.
 
 For a slab, `width = forward progress - 1`; internal-edge length `k` gives block
 length `k + 1`. Irreducibility requires a backward crossing of every internal
 cut. Mixed-width blocks are **not prefix-free**. Use the primitive-bridge unique
-decoding proof in [BridgeWords.lean](lean/RubiksSnake/BridgeWords.lean).
+decoding proof in [BridgeWords.lean](lean/RubiksSnake/SnAsymptotic/BridgeWords.lean).
 
-[BridgeCode.lean](lean/RubiksSnake/BridgeCode.lean) now provides reusable code
+[BridgeCode.lean](lean/RubiksSnake/SnAsymptotic/BridgeCode.lean) now provides reusable code
 concatenation, geometric validity, unique decoding, renewal counting, and
 `BridgeCode.le_growthConstant`. Its coefficients may be **undercounts**.
 `BridgeCode.ofSlabs` builds a code from a list of distinct widths and cutoffs;
 `ofSlabs_blocks_length` expresses its block counts through the original counter.
-[SlabLanguage.lean](lean/RubiksSnake/SlabLanguage.lean) reuses these proofs.
+[SlabLanguage.lean](lean/RubiksSnake/SnAsymptotic/SlabLanguage.lean) reuses these proofs.
 
 ### Existing upper bound
 
-[ForbiddenPrefixSixteenUpperBound.lean](lean/RubiksSnake/ForbiddenPrefixSixteenUpperBound.lean)
+[ForbiddenPrefixSixteenUpperBound.lean](lean/RubiksSnake/SnAsymptotic/ForbiddenPrefixSixteenUpperBound.lean)
 uses the prefixes of collision factors through length 16. Its certificate has
 4,748,260 states and 14,133,721 labeled edges. Forty-eight integer potential
 updates and a six-step terminal estimate give base 3.661786723 and prefactor 3.
@@ -205,21 +205,21 @@ prefactor. The length-14 certificate module rebuilt in 44 seconds after the
 same optimization.
 
 Preserve the existing public bound APIs in
-[SnAsymptotic_LowerBound.lean](lean/RubiksSnake/SnAsymptotic_LowerBound.lean),
-[SnAsymptotic_UpperBound.lean](lean/RubiksSnake/SnAsymptotic_UpperBound.lean),
-[SnAsymptotitc_MuLowerBound.lean](lean/RubiksSnake/SnAsymptotitc_MuLowerBound.lean),
-and [SnAsymptotitc_MuUpperBound.lean](lean/RubiksSnake/SnAsymptotitc_MuUpperBound.lean).
+[SnAsymptotic_LowerBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_LowerBound.lean),
+[SnAsymptotic_UpperBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_UpperBound.lean),
+[SnAsymptotitc_MuLowerBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotitc_MuLowerBound.lean),
+and [SnAsymptotitc_MuUpperBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotitc_MuUpperBound.lean).
 The `SnAsymptotitc` spelling is the actual filename.
 
 ### Tools for a new construction
 
-[CardinalDirections.lean](lean/RubiksSnake/CardinalDirections.lean) normalizes
+[CardinalDirections.lean](lean/RubiksSnake/SnAsymptotic/CardinalDirections.lean) normalizes
 arbitrary cardinal initial frames.
-[BoundedComponents.lean](lean/RubiksSnake/BoundedComponents.lean) bounds families
+[BoundedComponents.lean](lean/RubiksSnake/SnAsymptotic/BoundedComponents.lean) bounds families
 of a fixed or bounded number of independent snake components. Polynomial
 placement factors do not change their exponential rate.
 
-[FiniteTransfer.lean](lean/RubiksSnake/FiniteTransfer.lean) proves:
+[FiniteTransfer.lean](lean/RubiksSnake/SnAsymptotic/FiniteTransfer.lean) proves:
 
 - A nonzero nonnegative subeigenvector forces divergence of a finite transfer
   series, without an irreducibility assumption.
@@ -236,7 +236,7 @@ trace encoding, multiplicity bounds, and counting comparison for any application
 
 The candidate lower endpoint is **3.429771044**, not a proved numerical bound.
 The coefficient rows are already in
-[ExtendedSlabCertificate.lean](lean/RubiksSnake/ExtendedSlabCertificate.lean).
+[ExtendedSlabCertificate.lean](lean/RubiksSnake/SnAsymptotic/ExtendedSlabCertificate.lean).
 They use widths 0, 1, 2, and 3 with internal cutoffs **28, 23, 22, and 23**.
 The exact degree-29 polynomial comparison passed Lean. Independent external
 enumeration brackets its renewal root between 3.429771044 and 3.429771045.
@@ -244,10 +244,10 @@ Even if certified, it leaves gap **0.232015679**.
 
 Completed supporting work:
 
-- [RubiksSnakePrunedComputation.lean](lean/RubiksSnakePrunedComputation.lean)
+- [PrunedComputation.lean](lean/RubiksSnake/SnAsymptotic/PrunedComputation.lean)
   implements arbitrary pruning, a cached remaining-edge budget, and an optimized
   worker passing cursor fields separately.
-- [PrunedSlabEnumeration.lean](lean/RubiksSnake/PrunedSlabEnumeration.lean)
+- [PrunedSlabEnumeration.lean](lean/RubiksSnake/SnAsymptotic/PrunedSlabEnumeration.lean)
   proves restoration and coefficient domination for any Boolean predicate.
   It also proves the optimized worker equals the reference traversal.
   The previously failing `budgetSearch_eq_prunedCountSearch` proof was fixed
@@ -260,7 +260,7 @@ Completed supporting work:
 Remaining work:
 
 1. Fix the resource problem in `coefficient_le` in
-   [ExtendedSlabLowerBound.lean](lean/RubiksSnake/ExtendedSlabLowerBound.lean).
+   [ExtendedSlabLowerBound.lean](lean/RubiksSnake/SnAsymptotic/ExtendedSlabLowerBound.lean).
    A fresh bounded check during handover failed there with
    **`(kernel) excessive memory consumption detected`** at a 4096 MiB Lean limit.
    The earlier target build also did not complete. The root cause has not been
@@ -618,7 +618,7 @@ while a turn constraint forces `b1 = 0`, so `b2 = 1`. Two more collision
 constraints then force `b4 = 0` and `b7 = 1`. The intervening turn
 constraints force `b5 = 0`, then `b6 = 0`, then `b7 = 0`, a contradiction.
 
-[FCCLiftObstruction.lean](lean/RubiksSnake/FCCLiftObstruction.lean) now
+[FCCLiftObstruction.lean](lean/RubiksSnake/SnAsymptotic/FCCLiftObstruction.lean) now
 formalizes this example, including distinct backbone vertices, FCC edge
 geometry, exhaustiveness and realizability of both midpoints, and
 `no_valid_lift`. It tests only internal wedges, so changing endpoint faces
@@ -758,10 +758,10 @@ assumption, or unchecked replacement occurs in the new lower-bound dependency
 chain.
 
 The supporting modules are
-[BridgeSymmetry.lean](lean/RubiksSnake/BridgeSymmetry.lean),
-[QuarterSlab.lean](lean/RubiksSnake/QuarterSlab.lean),
-[FastLowerCertificate.lean](lean/RubiksSnake/FastLowerCertificate.lean), and
-[FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean).
+[BridgeSymmetry.lean](lean/RubiksSnake/SnAsymptotic/BridgeSymmetry.lean),
+[QuarterSlab.lean](lean/RubiksSnake/SnAsymptotic/QuarterSlab.lean),
+[FastLowerCertificate.lean](lean/RubiksSnake/SnAsymptotic/FastLowerCertificate.lean), and
+[FastLowerBound.lean](lean/RubiksSnake/SnAsymptotic/FastLowerBound.lean).
 The old public rational-bound APIs remain available and now follow from
 the stronger result. The five-theorem facade has been updated without
 changing its size or the upper endpoint.
@@ -886,28 +886,28 @@ Validation so far:
 
 ### Formalization already checked
 
-- [BridgeCaps.lean](lean/RubiksSnake/BridgeCaps.lean): overhanging head/tail
+- [BridgeCaps.lean](lean/RubiksSnake/SnAsymptotic/BridgeCaps.lean): overhanging head/tail
   definitions, backward-crossing criteria, and injectivity of the entire
   head-middle-tail factorization.
-- [CapGeometry.lean](lean/RubiksSnake/CapGeometry.lean): collision-free cap
+- [CapGeometry.lean](lean/RubiksSnake/SnAsymptotic/CapGeometry.lean): collision-free cap
   concatenation in any coordinate and initial frame; the existing slab
   traversal from an arbitrary initial layer produces canonical heads.
-- [RubiksSnakeCapComputation.lean](lean/RubiksSnakeCapComputation.lean):
+- [CapComputation.lean](lean/RubiksSnake/SnAsymptotic/CapComputation.lean):
   separately precompiled short-piece counter and finite assembly recurrence.
-- [CapEnumeration.lean](lean/RubiksSnake/CapEnumeration.lean): board
+- [CapEnumeration.lean](lean/RubiksSnake/SnAsymptotic/CapEnumeration.lean): board
   restoration, exact tagged-histogram semantics, sublist relation to the
   previously verified geometric traversal, and absence of duplicate words.
-- [CapCrossing.lean](lean/RubiksSnake/CapCrossing.lean): terminal-tag meaning,
+- [CapCrossing.lean](lean/RubiksSnake/SnAsymptotic/CapCrossing.lean): terminal-tag meaning,
   secondary-coordinate bounds, mask bounds, and actual backward-crossing
   witnesses for all set bits.
-- [CapCatalogue.lean](lean/RubiksSnake/CapCatalogue.lean): validity of every
+- [CapCatalogue.lean](lean/RubiksSnake/SnAsymptotic/CapCatalogue.lean): validity of every
   enumerated piece, canonical head/middle semantics, recovery of the starting
   layer and span, duplicate-free unions, and equality of native array entries
   with the tagged geometric catalogue counts.
-- [CapReversal.lean](lean/RubiksSnake/CapReversal.lean): injective head-to-tail
+- [CapReversal.lean](lean/RubiksSnake/SnAsymptotic/CapReversal.lean): injective head-to-tail
   transformation, preservation of geometric validity, and canonical tail
   semantics. It reuses the earlier rigid-frame and reversal theorems.
-- [CapCandidateCertificate.lean](lean/RubiksSnake/CapCandidateCertificate.lean):
+- [CapCandidateCertificate.lean](lean/RubiksSnake/SnAsymptotic/CapCandidateCertificate.lean):
   exact integer renewal inequality at 69/20. Its header explicitly states
   that this is not yet a lower-bound theorem.
 
@@ -966,31 +966,31 @@ about externally computed counts. The exact endpoint is
 `17252837 / 5000000 = 3.4505674`; both public lower bounds use it with
 pointwise prefactor one.
 
-- [CapPieces.lean](lean/RubiksSnake/CapPieces.lean) proves longitudinal
+- [CapPieces.lean](lean/RubiksSnake/SnAsymptotic/CapPieces.lean) proves longitudinal
   confinement, actual backward-crossing witnesses, reflected tail masks,
   collision-free concatenation, and irreducibility of a full-mask assembly.
-- [CapCounts.lean](lean/RubiksSnake/CapCounts.lean) proves slot decoding and
+- [CapCounts.lean](lean/RubiksSnake/SnAsymptotic/CapCounts.lean) proves slot decoding and
   exact aggregate head/middle histogram identities.
-- [CapAssembly.lean](lean/RubiksSnake/CapAssembly.lean) defines semantic
+- [CapAssembly.lean](lean/RubiksSnake/SnAsymptotic/CapAssembly.lean) defines semantic
   traces, proves validity and length, and proves both duplicate-free
   enumeration and injectivity of flattening by canonical cap factorization.
-- [CapRecurrence.lean](lean/RubiksSnake/CapRecurrence.lean) groups catalogue
+- [CapRecurrence.lean](lean/RubiksSnake/SnAsymptotic/CapRecurrence.lean) groups catalogue
   sums by tags and proves that any checked local recurrence subsolution
   undercounts the semantic traces.
-- [CapAssemblyCertificate.lean](lean/RubiksSnake/CapAssemblyCertificate.lean)
+- [CapAssemblyCertificate.lean](lean/RubiksSnake/SnAsymptotic/CapAssemblyCertificate.lean)
   checks every row of independently computed backward tables and compares
   the forward assembler with their head step. The tables have 65 length
   layers and `(width+1)*2^width` states per layer; long words are never
   enumerated. The final comparison is `assembledCounts_le_words`.
-- [CapCode.lean](lean/RubiksSnake/CapCode.lean) exchanges axes by a proper
+- [CapCode.lean](lean/RubiksSnake/SnAsymptotic/CapCode.lean) exchanges axes by a proper
   rigid frame change and adds a disjoint half-turned copy, separated by
   the sign of the transverse displacement.
-- [CapCombinedCode.lean](lean/RubiksSnake/CapCombinedCode.lean) proves
+- [CapCombinedCode.lean](lean/RubiksSnake/SnAsymptotic/CapCombinedCode.lean) proves
   width/length disjointness from the old code and the exact combined
   length-class formula.
-- [CapCandidateCertificate.lean](lean/RubiksSnake/CapCandidateCertificate.lean)
+- [CapCandidateCertificate.lean](lean/RubiksSnake/SnAsymptotic/CapCandidateCertificate.lean)
   now checks the integer polynomial at **3.4505674**, not merely 3.45.
-- [CapLowerBound.lean](lean/RubiksSnake/CapLowerBound.lean) supplies these
+- [CapLowerBound.lean](lean/RubiksSnake/SnAsymptotic/CapLowerBound.lean) supplies these
   coefficients to `BridgeCode.le_growthConstant` and transfers the result
   pointwise using the existing Fekete theorem.
 
@@ -1033,7 +1033,7 @@ passes. No commit or push was made.
 
 The user stopped numerical-bound research at **3.4505674 <= mu <= 3.661786723**
 and requested faster verification of
-[ForbiddenPrefixSixteenComputation.lean](lean/RubiksSnake/ForbiddenPrefixSixteenComputation.lean).
+[ForbiddenPrefixSixteenComputation.lean](lean/RubiksSnake/SnAsymptotic/ForbiddenPrefixSixteenComputation.lean).
 The module has two theorems: private `array_checked` performs the finite
 verification, and public `checked` converts its array result to statewise
 propositions. Both feed both final upper bounds. The graph metadata is not
@@ -1043,18 +1043,18 @@ checked to preserve the public API. No theorem was removed.
 Two changes reduce the cost:
 
 1. The executable prefix and window routines now live in
-   [RubiksSnakePrefixComputation.lean](lean/RubiksSnakePrefixComputation.lean),
+   [PrefixComputation.lean](lean/RubiksSnake/SnAsymptotic/PrefixComputation.lean),
    a separately precompiled Lake library.
-   [PrefixAutomatonData.lean](lean/RubiksSnake/PrefixAutomatonData.lean) remains
+   [PrefixAutomatonData.lean](lean/RubiksSnake/SnAsymptotic/PrefixAutomatonData.lean) remains
    a compatibility import, preserving declaration names and existing imports.
    Native precompilation alone reduced the fresh certificate check to
    **307.34 seconds**.
 2. Each encoded state's four candidate extensions share its wedge list,
    last wedge, and existing pairwise-validity check. Only the new wedge is
    tested separately for each rotation.
-   [WindowUpperComputation.lean](lean/RubiksSnake/WindowUpperComputation.lean)
+   [WindowUpperComputation.lean](lean/RubiksSnake/SnAsymptotic/WindowUpperComputation.lean)
    proves `extensionAllowed_eq_valid` for every prefix, including invalid
-   ones; [EncodedPrefixAutomaton.lean](lean/RubiksSnake/EncodedPrefixAutomaton.lean)
+   ones; [EncodedPrefixAutomaton.lean](lean/RubiksSnake/SnAsymptotic/EncodedPrefixAutomaton.lean)
    uses this equality in its transition-correctness proof.
    A length-12 control retained all counts and weights while graph generation
    fell from 972 ms to 414 ms.
