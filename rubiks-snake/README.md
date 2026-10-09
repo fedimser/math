@@ -41,15 +41,14 @@ cd rubiks-snake/lean
 lake build
 ```
 
-The five summary theorems are in
+The four summary results are in
 [FinalResults.lean](lean/RubiksSnake/SnAsymptotic/FinalResults.lean), in the namespace
-`RubiksSnake.FinalResults`. They state existence of the growth constant and
-the following bounds using exact decimal constants, reusing the existing proofs:
+`RubiksSnake.FinalResults`. They give the exact values `S_6 = 920` and
+`S_7 = 3384`, together with the following pointwise bounds using exact decimal
+constants:
 
 $$
-3.4505674 \leq \mu \leq 3.661786723,
-\qquad
-(3.4505674)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
+(3.4505674)^{n-1} \leq S_n \leq 2.95621(3.661786723)^{n-1}
 \quad(n\geq1).
 $$
 
@@ -90,32 +89,17 @@ from the Lean directory. For fresh checks of individual files, use
 `lake lean FILE.lean`, which loads the native libraries; bare
 `lake env lean FILE.lean` can fall back to much slower interpreted execution.
 
-The original five-minute
-[slab certificate](lean/RubiksSnake/SnAsymptotic/SlabCountCertificate.lean) remains available
-for historical and experimental modules, but is no longer imported by the
-default build or required by the best lower bound. Its public numerical
-APIs are preserved as corollaries of the stronger result.
 [Enumeration correctness](lean/RubiksSnake/SnAsymptotic/SlabEnumeration.lean),
 [collision freedom](lean/RubiksSnake/SnAsymptotic/SlabBlockValidity.lean), and
 [unique decoding](lean/RubiksSnake/SnAsymptotic/BridgeCode.lean) are proved separately.
 A block is selected by requiring a backward crossing of every internal slab
 boundary, avoiding the subtraction recurrence used by the Python certificate.
 
-The earlier [plane-block construction](lean/RubiksSnake/SnAsymptotic/SlabBlocks.lean) gives a base
-of 3.1. The [occupied-interface construction](lean/RubiksSnake/SnAsymptotic/RecordBlocks.lean)
-allows a block to revisit the preceding plane. It checks compatibility
-against the preceding block, proves that the entire concatenation is
-collision-free, and proves unique decoding. One
-[weighted continuation step](lean/RubiksSnake/SnAsymptotic/WeightedRecordLowerBound.lean)
-gives the base 3.193 on the same 428-block language; using only uniform
-continuation counts gives 3.16.
 The [upper bound](lean/RubiksSnake/SnAsymptotic/ForbiddenPrefixSixteenUpperBound.lean) uses the
 proper prefixes of collision factors through length 16. Its automaton has
 4,748,260 states; 48 sparse integer iterations generate the potential. A six-step terminal
 estimate handles states with no long continuation, without an artificial
 positive weight that would inflate the prefactor.
-The smaller [seven-symbol window](lean/RubiksSnake/SnAsymptotic/WindowSevenUpperBound.lean)
-also gives $S_n\leq(8/3)(3.704)^{n-1}$.
 The length-16 finite check now takes **3m39s**, down from the recorded **36m19s**.
 Its executable routines are in the separately precompiled
 [prefix computation library](lean/RubiksSnake/SnAsymptotic/PrefixComputation.lean).
@@ -140,34 +124,17 @@ Reproduce it from the repository root:
 ```
 
 This measures the finite certificate, not a fresh build of the entire library.
-The smaller
-[length-14 certificate](lean/RubiksSnake/SnAsymptotic/ForbiddenPrefixFourteenUpperBound.lean)
-matches the master paper's upper endpoint 3.667542939; its module rebuilt in
-44 seconds with the new shared computation library.
 The strongest formal bounds improve both endpoints of the original notebook
 certificate. Their remaining base gap is 0.211219323. Numerical-bound research
 has concluded at the user's request.
 The lower notebooks retain the historical 3.400034903 computation; they do
 not reproduce the fourfold or transverse-cap certificates.
 
-[Submultiplicativity](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_MuExistence.lean) also gives
-$\mu^{n-1}\leq S_n$ at every positive length. Consequently, any lower bound on
-$\mu$ gives a pointwise lower bound with prefactor one.
-
-The [bounded-component comparison](lean/RubiksSnake/SnAsymptotic/BoundedComponents.lean)
-proves that counting a fixed number of independent snake components, even
-with a polynomial number of placements, does not increase the exponential
-rate. The comparison also covers a variable number of components within a
-fixed bound, indexed by total wedges. A
+[Submultiplicativity](lean/RubiksSnake/SnAsymptotic/Submultiplicativity.lean)
+removes the positive prefactor from the renewal lower bound directly, without
+introducing a named growth constant. A
 [frame-normalization lemma](lean/RubiksSnake/SnAsymptotic/CardinalDirections.lean)
 connects paths in any cardinal initial frame to the original rotation formulas.
-The [finite-transfer criterion](lean/RubiksSnake/SnAsymptotic/FiniteTransfer.lean) proves
-divergence of a weighted transfer series from a nonzero nonnegative
-subeigenvector, without assuming irreducibility.
-A rank inequality bounds construction steps by wedge count, including
-zero-wedge steps.
-These are counting tools; they do not certify an additional geometric
-construction or improve the displayed numerical bounds.
 
 The [loop development](lean/RubiksSnake/OtherSequences/Loops.lean) proves preservation of
 validity under every integer cyclic shift, including negative shifts.

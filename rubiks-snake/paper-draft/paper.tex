@@ -27,8 +27,7 @@ $n$-wedge Rubik's Snake with quarter-turn joints. We prove that
 $\mu=\lim_{n\to\infty}S_n^{1/(n-1)}$ exists and that
 $\mu^{n-1}\leq S_n$ at every positive length.
 A Lean formalization establishes
-$q_-\leq\mu\leq q_+$ and
-$q_-^{n-1}\leq S_n\leq3q_+^{n-1}$, where
+$q_-^{n-1}\leq S_n\leq2.95621q_+^{n-1}$, where
 $q_-=3.4505674$ and $q_+=3.661786723$.
 The lower construction assembles short transverse bridges between
 overhanging head and tail pieces. Backward crossings certify
@@ -81,7 +80,7 @@ Our fully formalized bounds are
 \begin{equation}\label{eq:formal-bounds}
  \boxed{\begin{gathered}
   \qminus\leq\mu\leq\qplus,\\
-  \qminus^{n-1}\leq S_n\leq3\qplus^{n-1}
+  \qminus^{n-1}\leq S_n\leq2.95621\qplus^{n-1}
   \qquad(n\geq1).
  \end{gathered}}
 \end{equation}
@@ -661,7 +660,7 @@ It verifies the six terminal steps by successive sparse products.
 \begin{theorem}\label{thm:formal-upper}
 For every positive $n$,
 \[
- \mu\leq\qplus,\qquad S_n\leq3\qplus^{n-1}.
+ \mu\leq\qplus,\qquad S_n\leq2.95621\qplus^{n-1}.
 \]
 \end{theorem}
 \begin{proof}
@@ -669,7 +668,7 @@ Lemma~\ref{lem:terminal-potential} applies with $t=6$.
 The prefactor after absorbing $\qplus^{-6}$ satisfies
 \[
  \frac{21\,309\,021\,059\,784\,288}
-      {2\,990\,000\,000\,000\,\qplus^6}<3.
+      {2\,990\,000\,000\,000\,\qplus^6}<2.95621.
 \]
 This proves the pointwise bound when $n-1\geq6$.
 For $0\leq n-1<6$, use $S_n\leq4^{n-1}$.
@@ -772,9 +771,9 @@ All original integer inequalities and graph metadata remain checked.
 Both the finite certificate and its logical conversion are still
 dependencies of the final upper bounds. These timings exclude fresh
 builds of the pinned compiler and third-party dependencies.
-The five decimal summary theorems are in \texttt{FinalResults.lean}.
-The bounded constant, \texttt{snakeGrowthConstant}, is the limit
-identified by \texttt{tendsto\_countValidFormulas\_rpow}.
+The exact small counts and two decimal pointwise summary theorems are in
+\texttt{FinalResults.lean}. The Lean development uses submultiplicativity
+directly to remove the lower construction's fixed positive prefactor.
 
 The four Python notebooks in \texttt{asymptotic-analysis/} remain
 independent reproductions of the historical finite computations:

@@ -52,21 +52,20 @@ reach 3.5. The later fast-proof session improved the certified lower endpoint.
 
 ## Verified results
 
-The five public summary theorems are in
+The four public summary results are in
 [FinalResults.lean](lean/RubiksSnake/SnAsymptotic/FinalResults.lean), namespace
 `RubiksSnake.FinalResults`:
 
 | Theorem | Statement |
 | --- | --- |
-| `mu_exists` | The root growth rate of valid rotation-word counts exists and is positive. |
-| `mu_lower_bound` | `3.4505674 <= snakeGrowthConstant` |
-| `mu_upper_bound` | `snakeGrowthConstant <= 3.661786723` |
+| `S6_value` | `S 6 = 920` |
+| `S7_value` | `S 7 = 3384` |
 | `Sn_lower_bound` | `3.4505674^(n - 1) <= S_n` |
-| `Sn_upper_bound` | `S_n <= 3 * 3.661786723^(n - 1)` |
+| `Sn_upper_bound` | `S_n <= 2.95621 * 3.661786723^(n - 1)` |
 
-The last two statements hold for every positive wedge length. Both current
-base gaps are **0.211219323**. Keep exactly these five summary theorems, with
-exact decimal real numerals and proofs reusing the underlying results.
+The last two statements hold for every positive wedge length. Keep exactly
+these four results, with exact decimal real numerals and proofs reusing the
+optimized underlying certificates.
 
 The original lower endpoint, 3.400034903, has been formalized and improved to
 3.4003 and then 3.4505674. The original upper endpoint, 3.667542939, has also been formalized and
@@ -99,11 +98,10 @@ construction.
 - The final rotation fixes the last wedge's orientation without adding a
   further center displacement. Watch this offset in every encoding.
 
-[SnAsymptotic_MuExistence.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_MuExistence.lean)
-proves submultiplicativity and the useful consequence
-`snakeGrowthConstant^k <= countValidFormulas k`. Thus any new lower bound on
-`mu` immediately gives a same-base pointwise lower bound with prefactor one.
-There is no proved ratio limit or asymptotic formula `S_n ~ C * mu^n`.
+[Submultiplicativity.lean](lean/RubiksSnake/SnAsymptotic/Submultiplicativity.lean)
+proves submultiplicativity and directly removes a fixed positive prefactor
+from pointwise exponential lower bounds. The retained Lean development does
+not define or state results about a growth constant.
 
 ## Build and validation
 
@@ -196,7 +194,7 @@ concatenation, geometric validity, unique decoding, renewal counting, and
 [ForbiddenPrefixSixteenUpperBound.lean](lean/RubiksSnake/SnAsymptotic/ForbiddenPrefixSixteenUpperBound.lean)
 uses the prefixes of collision factors through length 16. Its certificate has
 4,748,260 states and 14,133,721 labeled edges. Forty-eight integer potential
-updates and a six-step terminal estimate give base 3.661786723 and prefactor 3.
+updates and a six-step terminal estimate give base 3.661786723 and prefactor 2.95621.
 The finite check now takes 218.69 seconds including its native library build,
 with 2.51 GiB peak child RSS; the historical run took 36 minutes 19 seconds.
 Zero weights
@@ -204,12 +202,8 @@ at dead ends are intentional; making them artificially positive worsens the
 prefactor. The length-14 certificate module rebuilt in 44 seconds after the
 same optimization.
 
-Preserve the existing public bound APIs in
-[SnAsymptotic_LowerBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_LowerBound.lean),
-[SnAsymptotic_UpperBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotic_UpperBound.lean),
-[SnAsymptotitc_MuLowerBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotitc_MuLowerBound.lean),
-and [SnAsymptotitc_MuUpperBound.lean](lean/RubiksSnake/SnAsymptotic/SnAsymptotitc_MuUpperBound.lean).
-The `SnAsymptotitc` spelling is the actual filename.
+Preserve the public pointwise bounds in
+[FinalResults.lean](lean/RubiksSnake/SnAsymptotic/FinalResults.lean).
 
 ### Tools for a new construction
 
