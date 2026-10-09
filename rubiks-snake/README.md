@@ -47,13 +47,21 @@ The five summary theorems are in
 the following bounds using exact decimal constants, reusing the existing proofs:
 
 $$
-3.4003 \leq \mu \leq 3.661786723,
+3.4505674 \leq \mu \leq 3.661786723,
 \qquad
-(3.4003)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
+(3.4505674)^{n-1} \leq S_n \leq 3(3.661786723)^{n-1}
 \quad(n\geq1).
 $$
 
-The [fast lower proof](lean/RubiksSnake/FastLowerBound.lean) uses
+The [current lower proof](lean/RubiksSnake/CapLowerBound.lean) assembles
+14-wedge transverse pieces between overhanging head and tail caps.
+[Unique geometric decoding](lean/RubiksSnake/CapAssembly.lean) and
+[checked local recurrence inequalities](lean/RubiksSnake/CapAssemblyCertificate.lean)
+prove that the degree-64 coefficients undercount distinct valid irreducible
+bridges. Opposite transverse orientations give two disjoint copies.
+Length cutoffs exclude overlap with the older slab code.
+
+That [older fast lower proof](lean/RubiksSnake/FastLowerBound.lean) uses
 [fourfold geometric symmetry](lean/RubiksSnake/BridgeSymmetry.lean): count
 only blocks whose first step is `+y`, then rotate them about x. The four
 copies are disjoint because their first steps differ. This multiplies every
@@ -61,10 +69,11 @@ coefficient by four without repeating the search. The checked seed widths
 are 0, 1, 2, and 3, with internal-edge cutoffs 20, 20, 18, and 21.
 Budget pruning only needs to give undercounts.
 
-The new coefficient certificate checks in about 50 seconds. A fresh,
-serial rebuild of **all 24 project-owned lower-proof modules**, including
-both native computation libraries and the certificate, passed in
-**117.61 seconds**, with maximum child RSS about **3.17 GiB**. This timing
+The old row check takes about 50 seconds, the new recurrence check about
+21 seconds, and the cap polynomial module about 8 seconds. A fresh,
+serial rebuild of **all 40 project-owned lower-proof modules**, including
+all three native computation libraries and all certificates, passed in
+**172.40 seconds**, with maximum child RSS about **3.17 GiB**. This timing
 reuses the pinned Lean compiler and cached third-party dependencies, but
 no project-owned build artifacts. Reproduce it from the repository root:
 
@@ -72,7 +81,11 @@ no project-owned build artifacts. Reproduce it from the repository root:
 .venv/bin/python rubiks-snake/lean/check_fast_lower.py
 ```
 
-For an ordinary incremental build, use `lake build RubiksSnake.FastLowerBound`
+The fresh check has a five-minute deadline and a 4096 MiB Lean heap limit.
+The older 117.61-second proof can still be benchmarked with
+`--target RubiksSnake.FastLowerBound --seconds 120`.
+
+For an ordinary incremental build, use `lake build RubiksSnake.CapLowerBound`
 from the Lean directory. For fresh checks of individual files, use
 `lake lean FILE.lean`, which loads the native libraries; bare
 `lake env lean FILE.lean` can fall back to much slower interpreted execution.

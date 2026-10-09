@@ -29,11 +29,12 @@ $\mu^{n-1}\leq S_n$ at every positive length.
 A Lean formalization establishes
 $q_-\leq\mu\leq q_+$ and
 $q_-^{n-1}\leq S_n\leq3q_+^{n-1}$, where
-$q_-=3.4003$ and $q_+=3.661786723$.
-The lower construction concatenates irreducible slabs. Recording a
-backward crossing of each internal boundary proves unique decoding.
-We enumerate one initial transverse direction; four disjoint rotations
-about the bridge axis supply the full coefficients.
+$q_-=3.4505674$ and $q_+=3.661786723$.
+The lower construction assembles short transverse bridges between
+overhanging head and tail pieces. Backward crossings certify
+irreducibility, and transverse separating cuts recover the pieces
+uniquely. A finite recurrence combines these blocks with an earlier
+fourfold-symmetry slab family.
 The upper proof uses $4\,748\,260$ suffix states to recognize short
 collision patterns. Both arguments use exact finite checks in Lean.
 The slab counter is compiled to native code, with separate proofs of
@@ -75,7 +76,7 @@ the weakly directed walks of~\cite{bacher2011}, provide related examples
 of the latter approach; their two-dimensional growth constants do not
 apply to this model.
 
-Put $\qminus=3.4003$ and $\qplus=3.661786723$.
+Put $\qminus=3.4505674$ and $\qplus=3.661786723$.
 Our fully formalized bounds are
 \begin{equation}\label{eq:formal-bounds}
  \boxed{\begin{gathered}
@@ -84,8 +85,9 @@ Our fully formalized bounds are
   \qquad(n\geq1).
  \end{gathered}}
 \end{equation}
-The lower proof uses four slab widths and proves that the enumerated
-blocks form a uniquely decoded language of valid snakes.
+The lower proof uses pieces of at most fourteen wedges and assembles
+irreducible blocks of at most sixty-four wedges. Their geometric
+separation and unique decoding are proved independently of the counter.
 The upper proof uses a compressed suffix automaton and a
 nonnegative weight function. Allowing zero weights at dead ends avoids
 the large prefactors produced by an artificially positive vector.
@@ -353,7 +355,7 @@ uses the same $428$ blocks.
 
 \subsection{Larger disjoint slabs}\label{sec:slabs}
 
-The strongest lower bound uses wider blocks with no shared occupied
+An intermediate lower bound uses wider blocks with no shared occupied
 plane. A block of progress $d$ enters $(0,0,0)$ by a
 $+e_x$ edge, stays in the layers $0\leq x\leq d-1$, and leaves
 its last cube by a $+e_x$ edge. Its length $j$ is its number of
@@ -432,7 +434,7 @@ $C=1+C\sum_ji_j\alpha^{-j}=1+C$, a contradiction.
 The strict polynomial inequality says that $p/D<\alpha$.
 \end{proof}
 
-For the current certificate, take progresses $1,2,3,4$ and internal
+For the symmetry-reduced slab certificate, take progresses $1,2,3,4$ and internal
 cutoffs $20,20,18,21$. Only the branch whose first step is $+e_y$
 is enumerated. The counter records backward crossings of internal
 slab boundaries and discards branches using a remaining-length budget.
@@ -458,24 +460,81 @@ x heights. The retained polynomial has $L=22$, with
 \[
  i_2,\ldots,i_9=4,8,16,24,40,72,272,1200.
 \]
-Its exact sign test gives
-\begin{equation}\label{eq:qminus}
- \mu\geq\qminus=\frac{34003}{10000}.
-\end{equation}
-Theorem~\ref{thm:existence} therefore gives
-\begin{equation}\label{eq:closed-lower}
- S_n\geq\qminus^{\,n-1}\qquad(n\geq1).
-\end{equation}
+Its exact sign test gives $\mu\geq34003/10000=3.4003$.
 The Lean induction uses the prefactor $4^{-24}$.
 Since $i_2,i_3>0$, every $k\geq2$ has $c_k\geq1$.
 For $2\leq k\leq23$, the bound
-$4^{-24}\qminus^k\leq1$ follows from $\qminus<4$.
+$4^{-24}(3.4003)^k\leq1$ follows from $3.4003<4$.
 For $k\geq24$, all indices $k-j$ in \eqref{eq:renewal} are at
 least two, and \eqref{eq:lower-certificate} proves the induction step.
 Taking growth rates and applying \eqref{eq:fekete-pointwise}
 removes the prefactor. The older notebook construction uses progresses
 $1,2,3$ through internal lengths $28,20,18$ and gives the historical
 endpoint $3.400034903$; it is not a dependency of the current proof.
+
+\subsection{Overhanging transverse caps}\label{sec:caps}
+
+We enlarge the code by constructing x-bridges inside $0\leq x\leq W$,
+for $W=2,3,4$. Each new block consists of a head, zero or more middle
+pieces, and a tail, joined in the positive y direction.
+The head's exit lies strictly above all its occupied y levels,
+but the head may dip below its entry. Middle pieces are irreducible
+y-bridges. A tail has nonnegative y displacement at every prefix,
+but may rise above its final level. These conditions place consecutive
+pieces in disjoint y layers.
+
+The head admits no earlier separating exit followed by a y-bridge.
+The tail admits no initial y-bridge followed by a nonnegative suffix.
+Backward crossings of all positive internal y cuts certify the head
+condition; for a tail, the required cuts include its final y level.
+Together with irreducibility of the middle pieces, these conditions
+make the complete head--middle--tail factorization unique.
+The Lean proof allows both overhangs.
+
+Only pieces with at most fourteen wedges and occupied y spans
+$0,1,2$ are enumerated. Heads start at $x=0$ and may enter at any
+y layer in their span. Middle pieces may start at any x layer,
+but enter at their lowest y layer. Every piece is classified by
+its length, terminal x coordinate, and the mask of x cuts crossed
+backwards. Reversing a head and applying a half turn in x and y
+gives a tail. A head ending at x coordinate $E$ supplies a tail
+starting at $W-E$, with its cut mask reflected.
+The tail leaves the final occupied layer $x=W$ through $+e_x$.
+
+For a remaining length $n$, entry layer $x$, and accumulated mask $m$,
+the continuation count is the sum of accepted tails and of
+\[
+ c(e)\,F(n-\ell(e),x(e),m\mathbin{\mathrm{OR}}m(e))
+\]
+over middle-piece classes $e$ of positive length $\ell(e)\leq n$.
+A tail is accepted when the combined mask contains every x cut.
+The initial head step uses the same continuation counts.
+Lean checks local recurrence inequalities on a finite table and
+proves by induction that this table undercounts the duplicate-free
+geometric trace catalogue. The forward assembly counter is checked
+against that table. No long assembled word needs to be enumerated.
+
+The complete mask makes every assembled x-bridge irreducible.
+Its total y displacement is positive, so a half turn about x
+supplies a disjoint second copy. We retain lengths at most $64$,
+discard lengths at most $19$ for $W=2$, and discard lengths at most
+$22$ for $W=3$. These are exactly the cutoffs needed to avoid
+overlap with the earlier slab code. The family at $W=4$ has a
+different x displacement from every old block.
+
+For the resulting coefficients $i_j$, Lean verifies
+\[
+ 17252837^{64}\leq
+ \sum_{j=1}^{64}i_j\,17252837^{64-j}\,5000000^j.
+\]
+The renewal bound, including the equality case, therefore gives
+\begin{equation}\label{eq:qminus}
+ \mu\geq\qminus=\frac{17252837}{5000000}=3.4505674.
+\end{equation}
+Equation~\eqref{eq:fekete-pointwise} gives the uniform consequence
+\begin{equation}\label{eq:closed-lower}
+ S_n\geq\qminus^{\,n-1}\qquad(n\geq1).
+\end{equation}
 
 \section{Upper bounds}\label{sec:upper}
 
@@ -662,15 +721,17 @@ The Lean project formalizes the integer-coordinate model of
 Section~\ref{sec:geometry}. It proves validity under rigid changes
 of frame, heredity, submultiplicativity, the growth limit, and the
 pointwise consequence \eqref{eq:fekete-pointwise}.
-The irreducible slab construction and compressed suffix argument then
+The transverse-cap construction and compressed suffix argument then
 give \eqref{eq:formal-bounds}.
 
 The enumeration and upper-potential checks use \texttt{native\_decide},
 as do the existing small-count checks. Their trust boundary includes
-Lean's compiled evaluation mechanism. On the lower side, only the
-coefficient-row check uses native evaluation; the renewal polynomial
-inequality is proved by exact kernel-checked arithmetic.
-Lean recomputes the stated rows; no external count or floating-point
+Lean's compiled evaluation mechanism. On the lower side, native
+evaluation checks the older coefficient rows, the new local recurrence
+inequalities, and the denominator-cleared integer polynomial.
+Their geometric interpretation, unique decoding, and passage to the
+growth bound are proved separately. Lean recomputes the rows and tables;
+no external count or floating-point
 vector is used as an assumption.
 The theorem dependencies contain no \texttt{sorryAx}.
 For speed, the upper checker stores coordinates
@@ -687,10 +748,12 @@ checking the coefficients; the mathematical library does not need
 native compilation.
 
 Build the project by running \texttt{lake build} in
-\texttt{rubiks-snake/lean}. The symmetry-reduced lower certificate takes
-about 50 seconds. A fresh serial rebuild of all 24 project-owned modules
-in its dependency chain, including both native libraries, took
-117.61 seconds with maximum child RSS of 3.17 GiB. This measurement
+\texttt{rubiks-snake/lean}. A fresh serial rebuild of all 40 project-owned
+modules in the current lower-proof dependency chain, including all three
+native libraries, took 172.40 seconds with maximum child RSS of 3.17 GiB.
+The older symmetry-row check took 49.95 seconds, the cap recurrence check
+21.31 seconds, and the cap integer-polynomial module 7.60 seconds.
+This measurement
 reused only the pinned compiler and cached third-party dependencies.
 The script \texttt{lean/check\_fast\_lower.py} reproduces the check.
 The historical 325-second lower certificate is no longer a dependency
@@ -711,7 +774,7 @@ independent reproductions of the historical finite computations:
 \texttt{pointwise-lower.ipynb} evaluates renewal counts and induction
 prefactors; and \texttt{pointwise-upper.ipynb} checks a positive
 full-graph vector. The lower notebooks retain the older endpoint
-$3.400034903$ and do not implement the fourfold reduction.
+$3.400034903$ and implement neither the fourfold reduction nor the cap construction.
 They use \texttt{rubiks\_snake.py}, NumPy,
 Numba, and SciPy. Run Python through the repository's \texttt{.venv}.
 
@@ -728,14 +791,15 @@ vectors only; a passed exact inequality is the certificate.
 
 Submultiplicativity determines a single exponential growth constant
 and gives the pointwise bound $\mu^{n-1}\leq S_n$.
-Irreducible slab blocks give the lower bound, with backward crossings
-recorded during enumeration. On the upper side, a prefix dictionary retains
+Overhanging transverse caps give the lower bound. Short-piece counts
+and a checked recurrence produce longer irreducible bridges with
+unique geometric decoding. On the upper side, a prefix dictionary retains
 the collision information of short windows with substantially fewer
 states, and terminal weights give a small prefactor.
 
-The formal interval $[3.4003,3.661786723]$ has width
-$0.261486723$. Fourfold geometric symmetry makes the lower proof
-checkable in under two minutes on the development machine.
+The formal interval $[3.4505674,3.661786723]$ has width
+$0.211219323$. The complete lower proof checks in under three minutes
+on the development machine.
 The lower bound still restricts long-range
 interactions between blocks, and the upper bound discards collisions
 beyond its finite memory. A gap below $0.1$ remains open.

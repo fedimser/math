@@ -2,9 +2,17 @@
 
 ## Objective and stopping condition
 
-**Latest focused request (2026-10-07 evening): achieved.** The user asked for
+**Current focused request (completed 2026-10-08): achieved.** The transverse-cap
+coefficient connection is proved, giving unconditional bounds
+**`3.4505674 <= mu`** and **`3.4505674^(n-1) <= S_n`**.
+A fresh serial rebuild of all **40 project-owned lower-proof modules** and
+all three native libraries took **172.40 seconds**, with maximum child RSS
+**3.17 GiB**. This meets the requested five-minute and 10 GB limits.
+The public facade uses the new endpoint. See the completion record below.
+
+**Previous focused request (2026-10-07 evening): achieved.** The user asked for
 a lower bound strictly above 3.4 with a Lean check below two minutes.
-The new unconditional bound is **3.4003**. A fresh serial rebuild of its
+That session's unconditional bound was **3.4003**. A fresh serial rebuild of its
 entire 24-module project-owned dependency chain took **117.61 seconds**,
 including both native computation libraries and the coefficient check.
 See [the fast lower proof](#fast-fourfold-lower-proof-2026-10-07-evening).
@@ -46,17 +54,17 @@ The five public summary theorems are in
 | Theorem | Statement |
 | --- | --- |
 | `mu_exists` | The root growth rate of valid rotation-word counts exists and is positive. |
-| `mu_lower_bound` | `3.4003 <= snakeGrowthConstant` |
+| `mu_lower_bound` | `3.4505674 <= snakeGrowthConstant` |
 | `mu_upper_bound` | `snakeGrowthConstant <= 3.661786723` |
-| `Sn_lower_bound` | `3.4003^(n - 1) <= S_n` |
+| `Sn_lower_bound` | `3.4505674^(n - 1) <= S_n` |
 | `Sn_upper_bound` | `S_n <= 3 * 3.661786723^(n - 1)` |
 
 The last two statements hold for every positive wedge length. Both current
-base gaps are **0.261486723**. Keep exactly these five summary theorems, with
+base gaps are **0.211219323**. Keep exactly these five summary theorems, with
 exact decimal real numerals and proofs reusing the underlying results.
 
 The original lower endpoint, 3.400034903, has been formalized and improved to
-3.4003. The original upper endpoint, 3.667542939, has also been formalized and
+3.4003 and then 3.4505674. The original upper endpoint, 3.667542939, has also been formalized and
 improved to 3.661786723.
 Do not revert to the earlier 3.193 lower bound.
 
@@ -143,7 +151,10 @@ their expensive checks.
 ### Existing lower bound
 
 The current default proof is
-[FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean), supported by
+[CapLowerBound.lean](lean/RubiksSnake/CapLowerBound.lean). Its new geometric
+and recurrence connection is described in the completion record below.
+It retains the earlier [FastLowerBound.lean](lean/RubiksSnake/FastLowerBound.lean),
+supported by
 [BridgeSymmetry.lean](lean/RubiksSnake/BridgeSymmetry.lean),
 [QuarterSlab.lean](lean/RubiksSnake/QuarterSlab.lean), and
 [FastLowerCertificate.lean](lean/RubiksSnake/FastLowerCertificate.lean).
@@ -805,3 +816,208 @@ successfully with resolved cross-references.
   120 seconds. The successful script obtains the environment once, uses Lake
   for native library builds, and invokes the pinned Lean checker directly for
   the remaining sources. It does not skip any project-owned proof.
+
+## Transverse caps: historical 2026-10-07 discovery record
+
+The following records the state before the completed proof described below.
+At the end of this session, the 3.45/five-minute target was not yet achieved.
+The finite exact candidate had root in
+**(3.450567417452112, 3.450567417455022)**, using only **14-wedge pieces**.
+The integer renewal inequality is checked in Lean, but the assembled
+coefficients have not yet been proved to undercount distinct valid x bridges.
+The five public results and paper therefore remain unchanged.
+
+### New geometric ingredient
+
+The old transverse grammar unnecessarily required its head to start at its
+lowest y level, and its tail to end at its highest y level. Allow an overhanging
+head and tail instead:
+
+- A head's exit is above every occupied y level; it may dip below its entry.
+- A tail stays above its entry, but may rise above its final y level.
+- Intermediate pieces are the earlier irreducible y bridges.
+- Head, successive middle pieces, and tail occupy disjoint y slabs.
+- A head has a backward crossing of each positive internal cut; a tail has
+  one of each positive cut up to and including its final height.
+- These conditions identify all separating cuts uniquely. Positive total y
+  displacement also separates the construction from its y-reflected copy.
+
+Head enumeration does not need a new geometric board theorem: run the old
+full-cut-mask slab search from an arbitrary initial y layer instead of zero.
+Its full backward mask implies both the needed positive-cut crossings and a
+visit to the bottom layer. An additional secondary coordinate bounds x.
+Tail coefficients are obtained by reversing the head and reflecting both x
+and y. The corresponding cut mask reverses its `width` bits.
+
+### Exact candidate
+
+Adjoin cap families at x widths **2, 3, 4**, y spans **0, 1, 2**, and piece
+cutoff **14 wedges** to the existing fast fourfold rows. Retain only new
+whole-block lengths greater than **19** and **22** at widths 2 and 3;
+width 4 has no old-row overlap. Truncate assembled blocks at **64 wedges**.
+The exact renewal mass at 69/20 is greater than one (approximately 1.00119).
+All overlap removal is by total word length, not heuristic subtraction.
+
+The independent C++ enumeration took 0.30, 0.50, and 0.80 seconds for these
+three widths, at less than 8 MiB RSS. The Lean native count/assembly took
+**6.51 seconds** including Lake startup, at about **801 MiB** maximum RSS.
+The standalone candidate certificate target took **8.51 seconds**, at about
+**3.14 GiB** maximum RSS. These are not timings of a completed fresh lower
+proof; no five-minute end-to-end claim has been established.
+
+Validation so far:
+
+- Independent coordinate/face-set oracle agrees with all 547 nonzero piece
+  coefficients through eight wedges, including zero-entry support.
+- Complete small grammars contain 279, 1,573, and 1,124 distinct valid words
+  at widths 0, 1, and 2; the oracle checks geometry, x irreducibility, and
+  exact recovery of every y separator.
+- All **10,320** native Lean head/middle slots agree with the C++ implementation.
+- All **195** assembled coefficients through degree 64 agree with the
+  independent Python recurrence, including head-to-tail mask reflection.
+- Lean checks the exact integer polynomial directly from its own executable
+  counts, with no imported count table.
+
+### Formalization already checked
+
+- [BridgeCaps.lean](lean/RubiksSnake/BridgeCaps.lean): overhanging head/tail
+  definitions, backward-crossing criteria, and injectivity of the entire
+  head-middle-tail factorization.
+- [CapGeometry.lean](lean/RubiksSnake/CapGeometry.lean): collision-free cap
+  concatenation in any coordinate and initial frame; the existing slab
+  traversal from an arbitrary initial layer produces canonical heads.
+- [RubiksSnakeCapComputation.lean](lean/RubiksSnakeCapComputation.lean):
+  separately precompiled short-piece counter and finite assembly recurrence.
+- [CapEnumeration.lean](lean/RubiksSnake/CapEnumeration.lean): board
+  restoration, exact tagged-histogram semantics, sublist relation to the
+  previously verified geometric traversal, and absence of duplicate words.
+- [CapCrossing.lean](lean/RubiksSnake/CapCrossing.lean): terminal-tag meaning,
+  secondary-coordinate bounds, mask bounds, and actual backward-crossing
+  witnesses for all set bits.
+- [CapCatalogue.lean](lean/RubiksSnake/CapCatalogue.lean): validity of every
+  enumerated piece, canonical head/middle semantics, recovery of the starting
+  layer and span, duplicate-free unions, and equality of native array entries
+  with the tagged geometric catalogue counts.
+- [CapReversal.lean](lean/RubiksSnake/CapReversal.lean): injective head-to-tail
+  transformation, preservation of geometric validity, and canonical tail
+  semantics. It reuses the earlier rigid-frame and reversal theorems.
+- [CapCandidateCertificate.lean](lean/RubiksSnake/CapCandidateCertificate.lean):
+  exact integer renewal inequality at 69/20. Its header explicitly states
+  that this is not yet a lower-bound theorem.
+
+These modules are outside the default root. Relevant targets have been built
+serially. The default root also passed after the shared compatibility lemma
+was made public; that incremental rebuild took 68.26 seconds, including a
+fresh 49-second check of the existing lower certificate, with maximum child
+RSS 3,403,976 KiB (about 3.25 GiB).
+
+The new theorem dependency audit reports only `propext`, `Classical.choice`
+where applicable, and `Quot.sound` for the geometric/counting lemmas. The
+candidate polynomial additionally uses its own `native_decide` check.
+There is no `sorryAx`, external count assumption, or user-added axiom.
+The mathlib ingredients reused so
+far are list sublists, duplicate-free concatenation, finite sums, natural
+bitwise lemmas, and the existing project's Fekete/renewal framework; no
+ready-made self-avoiding-walk lower theorem was identified.
+
+### Proof obligations at that time (all now discharged)
+
+1. Finish the aggregate-array/catalogue histogram identities and transition
+   metadata bookkeeping. Single-search array equality and disjointness across
+   starting layers and transverse spans are already proved.
+2. Complete the tail's secondary-coordinate displacement/mask reflection
+   bookkeeping and direction compatibility. Its geometric validity and
+   primary-coordinate canonical-tail property are already proved.
+3. Construct the complete capped x-bridge code, using the checked canonical
+   factorization theorem and secondary backward-crossing witnesses.
+4. Prove the assembly coefficient lower comparison. It is sufficient to
+   check the computed dynamic-programming table against local recurrence
+   inequalities and use induction; proving the imperative implementation
+   complete is unnecessary.
+5. Combine the length-disjoint old/new codes, apply the existing renewal
+   lower theorem, wire public results, and measure a fresh serial dependency
+   rebuild under 300 seconds. Only then update the paper and claim 3.45.
+
+### Reproducible external artifacts
+
+The same session artifact directory listed earlier contains
+`caps-w{2,3,4}-j14.json`, `caps-exact-candidate.json`, `caps_exact.py`,
+`caps_profile.lean`, `check_cap_profile.py`, `caps-profile-output.txt`,
+`caps_assembled_profile.lean`, `check_cap_assembly.py`, and
+`caps-assembled-output.txt`, plus `caps_audit.lean`. `transverse_bridges.cpp` and
+`transverse_oracle.py` now support caps while preserving their original mode.
+
+Two cheaper geometric variants were screened first. Choosing the growth
+axis from the first turn gave renewal mass about 0.97105 at 3.45; adding a
+disjoint perpendicular-axis family with negative head excursions raised it
+only to about 0.97611. These variants did not meet the target. The useful
+improvement is the overhanging-cap construction, not longer enumeration.
+
+## Completed transverse-cap proof: 2026-10-08
+
+The full coefficient-to-bridge connection now compiles without assumptions
+about externally computed counts. The exact endpoint is
+`17252837 / 5000000 = 3.4505674`; both public lower bounds use it with
+pointwise prefactor one.
+
+- [CapPieces.lean](lean/RubiksSnake/CapPieces.lean) proves longitudinal
+  confinement, actual backward-crossing witnesses, reflected tail masks,
+  collision-free concatenation, and irreducibility of a full-mask assembly.
+- [CapCounts.lean](lean/RubiksSnake/CapCounts.lean) proves slot decoding and
+  exact aggregate head/middle histogram identities.
+- [CapAssembly.lean](lean/RubiksSnake/CapAssembly.lean) defines semantic
+  traces, proves validity and length, and proves both duplicate-free
+  enumeration and injectivity of flattening by canonical cap factorization.
+- [CapRecurrence.lean](lean/RubiksSnake/CapRecurrence.lean) groups catalogue
+  sums by tags and proves that any checked local recurrence subsolution
+  undercounts the semantic traces.
+- [CapAssemblyCertificate.lean](lean/RubiksSnake/CapAssemblyCertificate.lean)
+  checks every row of independently computed backward tables and compares
+  the forward assembler with their head step. The tables have 65 length
+  layers and `(width+1)*2^width` states per layer; long words are never
+  enumerated. The final comparison is `assembledCounts_le_words`.
+- [CapCode.lean](lean/RubiksSnake/CapCode.lean) exchanges axes by a proper
+  rigid frame change and adds a disjoint half-turned copy, separated by
+  the sign of the transverse displacement.
+- [CapCombinedCode.lean](lean/RubiksSnake/CapCombinedCode.lean) proves
+  width/length disjointness from the old code and the exact combined
+  length-class formula.
+- [CapCandidateCertificate.lean](lean/RubiksSnake/CapCandidateCertificate.lean)
+  now checks the integer polynomial at **3.4505674**, not merely 3.45.
+- [CapLowerBound.lean](lean/RubiksSnake/CapLowerBound.lean) supplies these
+  coefficients to `BridgeCode.le_growthConstant` and transfers the result
+  pointwise using the existing Fekete theorem.
+
+The new native checker deliberately shares its counted arrays across all
+row checks. A first formulation using a dependent proposition directly
+repeated expensive work and was stopped after 180 seconds; the shared
+Boolean checker takes about 21 seconds. Its Boolean result is converted
+back to the exact logical recurrence contract by a proved theorem.
+
+Fresh validation used [check_fast_lower.py](lean/check_fast_lower.py),
+with target `RubiksSnake.CapLowerBound`, a 300-second deadline, serial
+module checks, and `-j1 -M4096`. Native plugins load in dependency order.
+All **40** project-owned modules were rebuilt with no reused project-owned
+artifacts. Only the pinned compiler and cached third-party dependencies
+were reused. Total elapsed time was **172.395182865 seconds**, with maximum
+child RSS **3,325,184 KiB** (about **3.17 GiB**).
+The older row check took 49.95 seconds, the recurrence certificate 21.31
+seconds, and the cap polynomial module 7.60 seconds.
+
+The machine-readable report is in the session artifact
+`cap-lower-fresh-build.json`. The earlier 3.4003 check remains reproducible
+with `--target RubiksSnake.FastLowerBound --seconds 120`.
+The five-minute requirement applies to the lower-proof chain; the unchanged
+length-16 upper certificate still takes about 36 minutes from scratch.
+The broader base-gap target below 0.1 remains open.
+
+The complete default library builds with the new five-theorem facade.
+The dependency audit of the connection, growth bound, and both public lower
+results contains no `sorryAx` or external-count assumptions. It includes
+standard logical axioms, the existing native geometric/counting checks,
+and the new recurrence and integer-polynomial `native_decide` certificates.
+These compiled-evaluation checks remain part of the explicit trust boundary.
+The updated seven-page paper also passed a forced `latexmk -g -pdf` rebuild,
+with no LaTeX warnings, undefined references, or overfull boxes in its log.
+The public Lean APIs rebuild without new warnings, and `git diff --check`
+passes. No commit or push was made.
