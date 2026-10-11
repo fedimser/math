@@ -1,4 +1,4 @@
-import RubiksSnake.OtherSequences.FormulaTransform
+import RubiksSnake.Transforms.FormulaTransform
 import RubiksSnake.Geometry
 
 import Mathlib.Tactic.FinCases

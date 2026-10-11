@@ -1,18 +1,20 @@
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.ComputeSnakes
+import RubiksSnake.Transforms.ReversalTransform
 import RubiksSnake.OtherSequences.RotationRestricted
-import RubiksSnake.OtherSequences.ReflectionTransform
+import RubiksSnake.Transforms.ReflectionTransform
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Data.Fintype.Quotient
 import Mathlib.GroupTheory.GroupAction.Quotient
 import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.Linarith
 
 /-!
-  Here we prove theorem that generalizes observation in
-  https://github.com/fedimser/math/blob/master/rubiks-snake/count-shapes-with-reversal.ipynb
+  Here we formalize results connecting number of formulas "fixed by" some
+  transform and "up to" some transform.
 
-  Let D_n - number of n-wedge shapes "up to" some transformation.
-  Let F_n - number of n-wedge shapes fixed by that transformation.
-  Then 2*D_n = F_n + S_n
+  This formalizes:
+    * Section 5.3.1 in https://github.com/fedimser/math/blob/master/rubiks-snake/count-shapes.ipynb
+    * https://github.com/fedimser/math/blob/master/rubiks-snake/count-shapes-with-reversal.ipynb
  -/
 
 namespace RubiksSnake
@@ -171,7 +173,6 @@ theorem BurnsideForRubiksSnake (n : ℕ+)
   simpa [Nat.mul_comm] using hburnside
 
 
-
 /-- Head-tail reversal and reflection commute: reversing index order does not
 affect the entrywise exchange of rotation symbols `1` and `3`. -/
 lemma reverseFormula_mirrorFormula {n : ℕ} (w : Formula n) :
@@ -187,8 +188,6 @@ def reversalReflectionTransform (n : ℕ) : InvolutiveFormulaTransform n where
     simp
   valid_iff w := by
     rw [valid_reverseFormula, valid_mirrorFormula]
-
-
 
 /-- Shapes fixed by head-tail reversal. -/
 def S_FIX_REV (n : ℕ+) : ℕ := fixedShapeCount n (reversalTransform _)
@@ -214,27 +213,59 @@ lemma BurnsideForReflection (n : ℕ+) :
     S n + S_FIX_REFL n = 2 * S_UT_REFL n := by
   simpa [S_FIX_REFL, S_UT_REFL] using BurnsideForRubiksSnake n (reflectionTransform _)
 
-/-- Count valid `n`-wedge formulas fixed by reflection, equivalently `S_FIX_REFL n`. -/
-
-def reflectionFixed (n : ℕ+) : ℕ :=
-  fixedShapeCount n (reflectionTransform _)
-
-/-- Count valid `n`-wedge formulas fixed by the combined reflection and reversal,
-without requiring that either transform fix the formula separately. -/
-def reversalReflectionFixed (n : ℕ+) : ℕ :=
+/-- Shapes fixed by reversal AND reflection. -/
+def S_FIX_REV_REFL (n : ℕ+) : ℕ :=
   fixedShapeCount n (reversalReflectionTransform _)
 
-/-- The two-term Burnside average for reflection classes of `n`-wedge formulas,
-expressed using natural-number division. -/
-def shapesUpToReflection (n : ℕ+) : ℕ :=
-  (S n + reflectionFixed n) / 2
-
-/-- The four-term Burnside expression for identifying reversal and reflection:
-average `S n` with the fixed-point counts of reversal, reflection, and their
-composition, using natural-number division. -/
-def shapesUpToReversalAndReflection (n : ℕ+) : ℕ :=
-  (S n + S_FIX_REV n + reflectionFixed n + reversalReflectionFixed n) / 4
-
 end
+
+/-- Explicilty computed values of sequences defined in this file. -/
+
+lemma S_FIX_REV_value_at_1 : S_FIX_REV 1 = 1 := by compute_snakes_pred
+lemma S_FIX_REV_value_at_2 : S_FIX_REV 2 = 4 := by compute_snakes_pred
+lemma S_FIX_REV_value_at_3 : S_FIX_REV 3 = 4 := by compute_snakes_pred
+lemma S_FIX_REV_value_at_4 : S_FIX_REV 4 = 16 := by compute_snakes_pred
+lemma S_FIX_REV_value_at_5 : S_FIX_REV 5 = 13 := by compute_snakes_pred
+lemma S_FIX_REV_value_at_6 : S_FIX_REV 6 = 60 := by compute_snakes_pred
+
+lemma S_UT_REV_value_at_1 : S_UT_REV 1 = 1 := by
+  linarith only [BurnsideForReversal 1, S_FIX_REV_value_at_1, S1_value]
+lemma S_UT_REV_value_at_2 : S_UT_REV 2 = 4 := by
+  linarith only [BurnsideForReversal 2, S_FIX_REV_value_at_2, S2_value]
+lemma S_UT_REV_value_at_3 : S_UT_REV 3 = 10 := by
+  linarith only [BurnsideForReversal 3, S_FIX_REV_value_at_3, S3_value]
+lemma S_UT_REV_value_at_4 : S_UT_REV 4 = 40 := by
+  linarith only [BurnsideForReversal 4, S_FIX_REV_value_at_4, S4_value]
+lemma S_UT_REV_value_at_5 : S_UT_REV 5 = 127 := by
+  linarith only [BurnsideForReversal 5, S_FIX_REV_value_at_5, S5_value]
+lemma S_UT_REV_value_at_6 : S_UT_REV 6 = 490 := by
+  linarith only [BurnsideForReversal 6, S_FIX_REV_value_at_6, S6_value]
+
+lemma S_FIX_REFL_value_at_1 : S_FIX_REFL 1 = 1 := by compute_snakes_pred
+lemma S_FIX_REFL_value_at_2 : S_FIX_REFL 2 = 2 := by compute_snakes_pred
+lemma S_FIX_REFL_value_at_3 : S_FIX_REFL 3 = 4 := by compute_snakes_pred
+lemma S_FIX_REFL_value_at_4 : S_FIX_REFL 4 = 8 := by compute_snakes_pred
+lemma S_FIX_REFL_value_at_5 : S_FIX_REFL 5 = 13 := by compute_snakes_pred
+lemma S_FIX_REFL_value_at_6 : S_FIX_REFL 6 = 24 := by compute_snakes_pred
+
+lemma S_UT_REFL_value_at_1 : S_UT_REFL 1 = 1 := by
+  linarith only [BurnsideForReflection 1, S_FIX_REFL_value_at_1, S1_value]
+lemma S_UT_REFL_value_at_2 : S_UT_REFL 2 = 3 := by
+  linarith only [BurnsideForReflection 2, S_FIX_REFL_value_at_2, S2_value]
+lemma S_UT_REFL_value_at_3 : S_UT_REFL 3 = 10 := by
+  linarith only [BurnsideForReflection 3, S_FIX_REFL_value_at_3, S3_value]
+lemma S_UT_REFL_value_at_4 : S_UT_REFL 4 = 36 := by
+  linarith only [BurnsideForReflection 4, S_FIX_REFL_value_at_4, S4_value]
+lemma S_UT_REFL_value_at_5 : S_UT_REFL 5 = 127 := by
+  linarith only [BurnsideForReflection 5, S_FIX_REFL_value_at_5, S5_value]
+lemma S_UT_REFL_value_at_6 : S_UT_REFL 6 = 472 := by
+  linarith only [BurnsideForReflection 6, S_FIX_REFL_value_at_6, S6_value]
+
+lemma S_FIX_REV_REFL_value_at_1 : S_FIX_REV_REFL 1 = 1 := by compute_snakes_pred
+lemma S_FIX_REV_REFL_value_at_2 : S_FIX_REV_REFL 2 = 2 := by compute_snakes_pred
+lemma S_FIX_REV_REFL_value_at_3 : S_FIX_REV_REFL 3 = 4 := by compute_snakes_pred
+lemma S_FIX_REV_REFL_value_at_4 : S_FIX_REV_REFL 4 = 8 := by compute_snakes_pred
+lemma S_FIX_REV_REFL_value_at_5 : S_FIX_REV_REFL 5 = 13 := by compute_snakes_pred
+lemma S_FIX_REV_REFL_value_at_6 : S_FIX_REV_REFL 6 = 28 := by compute_snakes_pred
 
 end RubiksSnake

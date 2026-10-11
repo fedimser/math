@@ -1,5 +1,5 @@
 import RubiksSnake.Geometry
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.Transforms.ReversalTransform
 
 /-!
 Cardinal-direction words and their rotation encodings. The initial directions

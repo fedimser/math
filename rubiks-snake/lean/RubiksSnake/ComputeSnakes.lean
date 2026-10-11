@@ -6,8 +6,11 @@ import Mathlib.Tactic.Ring
 This file provides:
  - a computable function fastS to evaluate S(n),
  - proof that fastS(n)=S(n),
- - tactic `compute_snakes` that can be used to prove statement about specific value of S(n).
+ - tactic `compute_snakes` to prove statements about specific value of S(n).
  - explicitly evaluated S(n) up to n=7.
+ - a computable predicate-filtered count fastCountValidShapesPred with a correctness proof.
+ - tactic `compute_snakes_pred` to prove statements about number of valid snakes
+     satisfying additional predicates.
 -/
 
 namespace RubiksSnake
@@ -264,6 +267,44 @@ theorem fastS_eq_S (n : ℕ+) : fastS n = S n := by
 /-- Prove a concrete equality for `S n` using the prefix-tree evaluator. -/
 macro "compute_snakes" : tactic =>
   `(tactic| (rw [← fastS_eq_S]; native_decide))
+
+/-- Count valid `n`-wedge formulas satisfying a decidable predicate, testing only
+completed words from the prefix-tree enumerator without allocating a filtered list. -/
+def fastCountValidShapesPred (n : ℕ+) (p : Formula ((n : ℕ) - 1) → Prop)
+    [DecidablePred p] : ℕ :=
+  (validRotationLists ((n : ℕ) - 1)).attach.countP fun rs =>
+    decide (p (formulaOfList rs.val (validRotationLists_length _ _ rs.property)))
+
+/-- The predicate-filtered prefix-tree count agrees with the abstract count
+of valid formulas satisfying `p`. -/
+theorem countingWithPredicate (n : ℕ+) (p : Formula ((n : ℕ) - 1) → Prop)
+    [DecidablePred p] :
+    countFormulas ((n : ℕ) - 1) (fun f => Valid f ∧ p f) =
+      fastCountValidShapesPred n p := by
+  let k := (n : ℕ) - 1
+  let q := fun rs : {rs : List Rotation // rs ∈ validRotationLists k} =>
+    p ((validFormulaEquiv k).symm rs).val
+  let selected := (validRotationLists k).attach.toFinset.filter q
+  have e : {f : Formula k // Valid f ∧ p f} ≃ ↥selected :=
+    ((Equiv.subtypeSubtypeEquivSubtypeInter Valid p).symm.trans
+      (validFormulaEquiv k).subtypeEquivOfSubtype').trans
+      (Equiv.subtypeEquivRight (by
+        intro rs
+        simp [selected, q]))
+  unfold countFormulas
+  rw [Nat.card_congr e, Nat.card_eq_fintype_card, Fintype.card_coe]
+  exact (validRotationLists_nodup k).attach.card_eq_countP
+
+/-- Prove a concrete predicate-restricted count, reducing transparent wrapper
+definitions as needed and using a computable predicate. Already executable
+goals are checked directly without rewriting. -/
+macro "compute_snakes_pred" : tactic =>
+  `(tactic| first
+    | native_decide
+    | (
+      change countFormulas _ (fun f => Valid f ∧ _) = _
+      rw [countingWithPredicate]
+      native_decide))
 
 
 /-- Counts, see https://oeis.org/A375865. -/

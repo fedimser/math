@@ -41,6 +41,38 @@ cd rubiks-snake/lean
 lake build
 ```
 
+The shared formula, reflection, and reversal transforms live in
+[Transforms](lean/RubiksSnake/Transforms), with module names
+`RubiksSnake.Transforms.FormulaTransform`,
+`RubiksSnake.Transforms.ReflectionTransform`, and
+`RubiksSnake.Transforms.ReversalTransform`.
+
+[ComputeSnakes.lean](lean/RubiksSnake/ComputeSnakes.lean) also provides
+`fastCountValidShapesPred n p` for counting valid `n`-wedge formulas satisfying
+`p`. It generates valid rotation lists of length `n - 1`, then counts matches
+without allocating a filtered list. The predicate must have a computable
+`DecidablePred p` instance. For example:
+
+```lean
+import RubiksSnake.ComputeSnakes
+open RubiksSnake
+
+#eval fastCountValidShapesPred 5 (fun f => ∀ i, f i = 0) -- 1
+```
+
+Use `compute_snakes_pred` to prove concrete predicate-restricted counts. The
+tactic reduces transparent named-count wrappers, rewrites the abstract count
+to the executable count using `countingWithPredicate` when applicable, and
+finishes with `native_decide`. Already executable goals are checked directly;
+count conversion is optional, but the final computation must succeed.
+For example, after importing
+`RubiksSnake.OtherSequences.Burnside` and opening `RubiksSnake`:
+
+```lean
+example : S_FIX_REV 5 = 13 := by
+  compute_snakes_pred
+```
+
 The four summary results are in
 [FinalResults.lean](lean/RubiksSnake/SnAsymptotic/FinalResults.lean), in the namespace
 `RubiksSnake.FinalResults`. They give the exact values `S_6 = 920` and

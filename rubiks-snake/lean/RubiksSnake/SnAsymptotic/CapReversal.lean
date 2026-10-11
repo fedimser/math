@@ -1,5 +1,5 @@
 import RubiksSnake.SnAsymptotic.CapCatalogue
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.Transforms.ReversalTransform
 
 /-! Head-to-tail reversal, reusing the existing geometric reversal theorem. -/
 

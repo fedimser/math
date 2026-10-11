@@ -1,9 +1,9 @@
 import RubiksSnake.OtherSequences.Burnside
 import RubiksSnake.Definitions
 import RubiksSnake.Geometry
-import RubiksSnake.OtherSequences.FormulaTransform
+import RubiksSnake.Transforms.FormulaTransform
 import RubiksSnake.OtherSequences.Loops
-import RubiksSnake.OtherSequences.ReflectionTransform
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.Transforms.ReflectionTransform
+import RubiksSnake.Transforms.ReversalTransform
 import RubiksSnake.OtherSequences.RotationRestricted
 import RubiksSnake.SnAsymptotic.FinalResults

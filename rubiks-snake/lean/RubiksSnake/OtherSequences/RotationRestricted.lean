@@ -1,4 +1,4 @@
-import RubiksSnake.OtherSequences.ReflectionTransform
+import RubiksSnake.Transforms.ReflectionTransform
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 

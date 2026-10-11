@@ -1,5 +1,5 @@
 import RubiksSnake.ComputeSnakes
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.Transforms.ReversalTransform
 import RubiksSnake.SnAsymptotic.SnAsymptoticEasy
 import Mathlib.Analysis.Subadditive
 import Mathlib.Analysis.SpecialFunctions.Log.Basic

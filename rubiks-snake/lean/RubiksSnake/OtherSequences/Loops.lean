@@ -2,7 +2,7 @@ import Mathlib.Data.ZMod.Basic
 import Mathlib.Data.List.Rotate
 
 import RubiksSnake.Definitions
-import RubiksSnake.OtherSequences.ReversalTransform
+import RubiksSnake.Transforms.ReversalTransform
 
 namespace RubiksSnake
 
