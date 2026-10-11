@@ -3,11 +3,12 @@ import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 
 /-!
-  Small counts explcilty calculated.
-
-  This file exists as additional check that definitions are correct, so the
-  counts according to Lean definitions match those computed in Python.
- -/
+This file provides:
+ - a computable function fastS to evaluate S(n),
+ - proof that fastS(n)=S(n),
+ - tactic `compute_snakes` that can be used to prove statement about specific value of S(n).
+ - explicitly evaluated S(n) up to n=7.
+-/
 
 namespace RubiksSnake
 
@@ -261,7 +262,17 @@ theorem fastS_eq_S (n : ℕ+) : fastS n = S n := by
   exact fastCountValidFormulas_eq _
 
 /-- Prove a concrete equality for `S n` using the prefix-tree evaluator. -/
-macro "snake_decide" : tactic =>
+macro "compute_snakes" : tactic =>
   `(tactic| (rw [← fastS_eq_S]; native_decide))
+
+
+/-- Counts, see https://oeis.org/A375865. -/
+lemma S1_value : S 1 = 1 := by compute_snakes
+lemma S2_value : S 2 = 4 := by compute_snakes
+lemma S3_value : S 3 = 16 := by compute_snakes
+lemma S4_value : S 4 = 64 := by compute_snakes
+lemma S5_value : S 5 = 241 := by compute_snakes
+lemma S6_value : S 6 = 920 := by compute_snakes
+lemma S7_value : S 7 = 3384 := by compute_snakes
 
 end RubiksSnake

@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptotic.SmallCounts
+import RubiksSnake.ComputeSnakes
 import RubiksSnake.OtherSequences.ReversalTransform
 import RubiksSnake.SnAsymptotic.SnAsymptoticEasy
 import Mathlib.Analysis.Subadditive
@@ -201,7 +201,7 @@ theorem pow_le_countValidFormulas_of_pointwise
   by_cases hk : k = 0
   · subst k
     have h0 : countValidFormulas 0 = 1 := by
-      simpa [S] using (show S 1 = 1 by snake_decide)
+      simpa [S] using (show S 1 = 1 by compute_snakes)
     norm_num [h0]
   · have hkpos : (0 : ℝ) < k := by exact_mod_cast Nat.pos_of_ne_zero hk
     have hlim := logValidFormulaCount_subadditive.lim_le_div

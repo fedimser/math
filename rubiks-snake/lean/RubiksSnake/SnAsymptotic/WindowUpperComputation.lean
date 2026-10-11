@@ -1,4 +1,4 @@
-import RubiksSnake.SnAsymptotic.SmallCounts
+import RubiksSnake.ComputeSnakes
 import RubiksSnake.SnAsymptotic.PrefixAutomatonData
 
 /-!
